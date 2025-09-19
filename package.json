@@ -1,0 +1,51 @@
+{
+  "name": "process-execution-system",
+  "version": "1.0.0",
+  "description": "User management and process execution system with state machines",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "live-server public --host=localhost --port=8080",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "build": "npm run build:capacitor",
+    "build:capacitor": "npx cap build",
+    "cap:add": "npx cap add",
+    "cap:sync": "npx cap sync",
+    "cap:run": "npx cap run",
+    "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix"
+  },
+  "keywords": [
+    "process-management",
+    "state-machine",
+    "user-management",
+    "websocket",
+    "capacitor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/ios": "^5.0.0",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "eslint": "^8.42.0",
+    "live-server": "^1.2.2"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.config.js"
+    ]
+  }
+}
