@@ -66,7 +66,7 @@ class User {
         this.updatedAt = new Date().toISOString();
     }
 
-    setPassword(password, cryptoService) {
+    async setPassword(password, cryptoService) {
         if (!cryptoService) {
             throw new Error('CryptoService is required for password operations');
         }
@@ -75,17 +75,17 @@ class User {
             throw new Error('Password must be at least 8 characters long');
         }
 
-        const saltAndHash = cryptoService.generateSaltAndHash(password);
+        const saltAndHash = await cryptoService.generateSaltAndHash(password);
         this.salt = saltAndHash.salt;
         this.passwordHash = saltAndHash.hash;
         this.updatedAt = new Date().toISOString();
     }
 
-    verifyPassword(password, cryptoService) {
+    async verifyPassword(password, cryptoService) {
         if (!cryptoService || !this.passwordHash || !this.salt) {
             return false;
         }
-        return cryptoService.verifyPassword(password, this.passwordHash, this.salt);
+        return await cryptoService.verifyPassword(password, this.passwordHash, this.salt);
     }
 
     generatePasswordResetToken(cryptoService) {
@@ -99,7 +99,7 @@ class User {
         return this.passwordResetToken;
     }
 
-    resetPassword(token, newPassword, cryptoService) {
+    async resetPassword(token, newPassword, cryptoService) {
         if (!this.passwordResetToken || !this.passwordResetExpires) {
             throw new Error('No password reset token found');
         }
@@ -112,7 +112,7 @@ class User {
             throw new Error('Invalid password reset token');
         }
 
-        this.setPassword(newPassword, cryptoService);
+        await this.setPassword(newPassword, cryptoService);
         this.passwordResetToken = null;
         this.passwordResetExpires = null;
         this.loginAttempts = 0;

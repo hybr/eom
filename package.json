@@ -1,6 +1,7 @@
 {
   "name": "process-execution-system",
   "version": "1.0.0",
+  "type": "module",
   "description": "User management and process execution system with state machines",
   "main": "src/app.js",
   "scripts": {
@@ -26,16 +27,18 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@capacitor/core": "^5.0.0",
-    "@capacitor/cli": "^5.0.0",
     "@capacitor/android": "^5.0.0",
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/core": "^5.0.0",
     "@capacitor/ios": "^5.0.0",
+    "better-sqlite3": "^12.3.0",
+    "sqlite3": "^5.1.7",
     "ws": "^8.13.0"
   },
   "devDependencies": {
+    "eslint": "^8.42.0",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
-    "eslint": "^8.42.0",
     "live-server": "^1.2.2"
   },
   "jest": {

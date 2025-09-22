@@ -1,12 +1,19 @@
 import User from '../entities/User.js';
 import CryptoService from '../utils/CryptoService.js';
+import UserRepository from '../database/UserRepository.js';
+import SessionRepository from '../database/SessionRepository.js';
 
 class AuthenticationService {
     constructor() {
         this.cryptoService = new CryptoService();
-        this.users = new Map();
-        this.sessions = new Map();
+        this.userRepository = new UserRepository();
+        this.sessionRepository = new SessionRepository();
         this.eventListeners = new Map();
+
+        // Add dummy user for testing (async)
+        this.addDummyUser().catch(error => {
+            console.error('Failed to initialize dummy user:', error);
+        });
     }
 
     addEventListener(event, callback) {
@@ -45,11 +52,11 @@ class AuthenticationService {
                 throw new Error(validation.errors.join(', '));
             }
 
-            if (await this.isUsernameExists(userData.username)) {
+            if (await this.userRepository.isUsernameExists(userData.username)) {
                 throw new Error('Username already exists');
             }
 
-            if (await this.isEmailExists(userData.email)) {
+            if (await this.userRepository.isEmailExists(userData.email)) {
                 throw new Error('Email already exists');
             }
 
@@ -62,7 +69,7 @@ class AuthenticationService {
                 organizationId: userData.organizationId || null
             });
 
-            user.setPassword(userData.password, this.cryptoService);
+            await user.setPassword(userData.password, this.cryptoService);
 
             if (userData.requireEmailVerification !== false) {
                 user.generateEmailVerificationToken(this.cryptoService);
@@ -70,7 +77,7 @@ class AuthenticationService {
                 user.isEmailVerified = true;
             }
 
-            this.users.set(user.id, user);
+            await this.userRepository.create(user);
 
             this.emit('user:registered', {
                 userId: user.id,
@@ -107,7 +114,7 @@ class AuthenticationService {
                 throw new Error('Username/email and password are required');
             }
 
-            const user = await this.findUserByUsernameOrEmail(usernameOrEmail);
+            const user = await this.userRepository.findByUsernameOrEmail(usernameOrEmail);
             if (!user) {
                 throw new Error('Invalid credentials');
             }
@@ -121,10 +128,10 @@ class AuthenticationService {
                 }
             }
 
-            const isPasswordValid = user.verifyPassword(password, this.cryptoService);
+            const isPasswordValid = await user.verifyPassword(password, this.cryptoService);
             if (!isPasswordValid) {
                 user.incrementLoginAttempts();
-                this.users.set(user.id, user);
+                await this.userRepository.update(user.id, user);
 
                 this.emit('user:login_failed', {
                     userId: user.id,
@@ -141,9 +148,9 @@ class AuthenticationService {
             }
 
             user.updateLastLogin();
-            this.users.set(user.id, user);
+            await this.userRepository.update(user.id, user);
 
-            const session = this.createSession(user);
+            const session = await this.createSession(user);
 
             this.emit('user:logged_in', {
                 userId: user.id,
@@ -171,12 +178,12 @@ class AuthenticationService {
 
     async logout(sessionId) {
         try {
-            const session = this.sessions.get(sessionId);
+            const session = await this.sessionRepository.findById(sessionId);
             if (session) {
-                this.sessions.delete(sessionId);
+                await this.sessionRepository.delete(sessionId);
 
                 this.emit('user:logged_out', {
-                    userId: session.userId,
+                    userId: session.user_id,
                     sessionId: sessionId
                 });
 
@@ -195,13 +202,13 @@ class AuthenticationService {
 
     async requestPasswordReset(email) {
         try {
-            const user = await this.findUserByEmail(email);
+            const user = await this.userRepository.findByEmail(email);
             if (!user) {
                 return { success: true };
             }
 
             const resetToken = user.generatePasswordResetToken(this.cryptoService);
-            this.users.set(user.id, user);
+            await this.userRepository.update(user.id, user);
 
             this.emit('user:password_reset_requested', {
                 userId: user.id,
@@ -221,7 +228,7 @@ class AuthenticationService {
 
     async resetPassword(token, newPassword) {
         try {
-            const user = await this.findUserByPasswordResetToken(token);
+            const user = await this.userRepository.findByPasswordResetToken(token);
             if (!user) {
                 throw new Error('Invalid or expired reset token');
             }
@@ -231,8 +238,8 @@ class AuthenticationService {
                 throw new Error(passwordValidation.errors.join(', '));
             }
 
-            user.resetPassword(token, newPassword, this.cryptoService);
-            this.users.set(user.id, user);
+            await user.resetPassword(token, newPassword, this.cryptoService);
+            await this.userRepository.update(user.id, user);
 
             this.emit('user:password_reset', {
                 userId: user.id,
@@ -251,13 +258,13 @@ class AuthenticationService {
 
     async verifyEmail(token) {
         try {
-            const user = await this.findUserByEmailVerificationToken(token);
+            const user = await this.userRepository.findByEmailVerificationToken(token);
             if (!user) {
                 throw new Error('Invalid or expired verification token');
             }
 
             user.verifyEmail(token);
-            this.users.set(user.id, user);
+            await this.userRepository.update(user.id, user);
 
             this.emit('user:email_verified', {
                 userId: user.id,
@@ -276,12 +283,12 @@ class AuthenticationService {
 
     async changePassword(userId, currentPassword, newPassword) {
         try {
-            const user = this.users.get(userId);
+            const user = await this.userRepository.findById(userId);
             if (!user) {
                 throw new Error('User not found');
             }
 
-            if (!user.verifyPassword(currentPassword, this.cryptoService)) {
+            if (!(await user.verifyPassword(currentPassword, this.cryptoService))) {
                 throw new Error('Current password is incorrect');
             }
 
@@ -290,8 +297,8 @@ class AuthenticationService {
                 throw new Error(passwordValidation.errors.join(', '));
             }
 
-            user.setPassword(newPassword, this.cryptoService);
-            this.users.set(user.id, user);
+            await user.setPassword(newPassword, this.cryptoService);
+            await this.userRepository.update(user.id, user);
 
             this.emit('user:password_changed', {
                 userId: user.id,
@@ -308,99 +315,84 @@ class AuthenticationService {
         }
     }
 
-    createSession(user) {
+    async createSession(user) {
         const session = {
             id: this.cryptoService.generateSecureId(),
             token: this.cryptoService.generateToken(),
-            userId: user.id,
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-            lastActivity: new Date().toISOString()
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+            last_activity: new Date().toISOString()
         };
 
-        this.sessions.set(session.id, session);
-        return session;
+        await this.sessionRepository.create(session);
+        return {
+            id: session.id,
+            token: session.token,
+            userId: session.user_id,
+            createdAt: session.created_at,
+            expiresAt: session.expires_at,
+            lastActivity: session.last_activity
+        };
     }
 
     async validateSession(sessionId) {
-        const session = this.sessions.get(sessionId);
+        const session = await this.sessionRepository.findById(sessionId);
         if (!session) {
             return { valid: false, error: 'Session not found' };
         }
 
-        if (new Date() > new Date(session.expiresAt)) {
-            this.sessions.delete(sessionId);
+        if (new Date() > new Date(session.expires_at)) {
+            await this.sessionRepository.delete(sessionId);
             return { valid: false, error: 'Session expired' };
         }
 
-        const user = this.users.get(session.userId);
+        const user = await this.userRepository.findById(session.user_id);
         if (!user || !user.isActive) {
-            this.sessions.delete(sessionId);
+            await this.sessionRepository.delete(sessionId);
             return { valid: false, error: 'User not found or inactive' };
         }
 
-        session.lastActivity = new Date().toISOString();
-        this.sessions.set(sessionId, session);
+        await this.sessionRepository.update(sessionId, {
+            last_activity: new Date().toISOString()
+        });
 
         return {
             valid: true,
-            session,
+            session: {
+                id: session.id,
+                token: session.token,
+                userId: session.user_id,
+                createdAt: session.created_at,
+                expiresAt: session.expires_at,
+                lastActivity: session.last_activity
+            },
             user: user.toJSON()
         };
     }
 
     async findUserByUsernameOrEmail(usernameOrEmail) {
-        for (const user of this.users.values()) {
-            if (user.username === usernameOrEmail || user.email === usernameOrEmail) {
-                return user;
-            }
-        }
-        return null;
+        return await this.userRepository.findByUsernameOrEmail(usernameOrEmail);
     }
 
     async findUserByEmail(email) {
-        for (const user of this.users.values()) {
-            if (user.email === email) {
-                return user;
-            }
-        }
-        return null;
+        return await this.userRepository.findByEmail(email);
     }
 
     async findUserByPasswordResetToken(token) {
-        for (const user of this.users.values()) {
-            if (user.passwordResetToken === token) {
-                return user;
-            }
-        }
-        return null;
+        return await this.userRepository.findByPasswordResetToken(token);
     }
 
     async findUserByEmailVerificationToken(token) {
-        for (const user of this.users.values()) {
-            if (user.emailVerificationToken === token) {
-                return user;
-            }
-        }
-        return null;
+        return await this.userRepository.findByEmailVerificationToken(token);
     }
 
     async isUsernameExists(username) {
-        for (const user of this.users.values()) {
-            if (user.username === username) {
-                return true;
-            }
-        }
-        return false;
+        return await this.userRepository.isUsernameExists(username);
     }
 
     async isEmailExists(email) {
-        for (const user of this.users.values()) {
-            if (user.email === email) {
-                return true;
-            }
-        }
-        return false;
+        return await this.userRepository.isEmailExists(email);
     }
 
     validateRegistrationData(userData) {
@@ -436,38 +428,56 @@ class AuthenticationService {
         };
     }
 
-    getSessionCount() {
-        return this.sessions.size;
+    async getSessionCount() {
+        return await this.sessionRepository.count();
     }
 
-    getUserCount() {
-        return this.users.size;
+    async getUserCount() {
+        return await this.userRepository.count();
     }
 
-    cleanupExpiredSessions() {
-        const now = new Date();
-        for (const [sessionId, session] of this.sessions.entries()) {
-            if (now > new Date(session.expiresAt)) {
-                this.sessions.delete(sessionId);
-            }
-        }
+    async cleanupExpiredSessions() {
+        return await this.sessionRepository.cleanupExpired();
     }
 
-    getAllUsers() {
-        return Array.from(this.users.values()).map(user => user.toJSON());
+    async getAllUsers() {
+        const users = await this.userRepository.findAll();
+        return users.map(user => user.toJSON());
     }
 
-    getUser(userId) {
-        const user = this.users.get(userId);
+    async getUser(userId) {
+        const user = await this.userRepository.findById(userId);
         return user ? user.toJSON() : null;
     }
 
-    setUsers(users) {
-        this.users.clear();
-        users.forEach(userData => {
-            const user = User.fromJSON(userData);
-            this.users.set(user.id, user);
-        });
+    async setUsers(users) {
+        // This method is deprecated when using database storage
+        // Users should be managed through individual CRUD operations
+        throw new Error('setUsers is not supported with database storage. Use individual create/update operations instead.');
+    }
+
+    async addDummyUser() {
+        try {
+            // Check if admin user already exists
+            const existingUser = await this.userRepository.findByUsername('admin');
+            if (existingUser) {
+                return; // Admin user already exists
+            }
+
+            const dummyUser = new User({
+                username: 'admin',
+                email: 'admin@example.com',
+                firstName: 'Admin',
+                lastName: 'User',
+                role: 'admin',
+                isEmailVerified: true
+            });
+
+            await dummyUser.setPassword('Admin123!', this.cryptoService);
+            await this.userRepository.create(dummyUser);
+        } catch (error) {
+            console.error('Failed to create dummy user:', error.message);
+        }
     }
 }
 

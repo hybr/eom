@@ -109,7 +109,7 @@ class AuthenticationService {
 
             const user = await this.findUserByUsernameOrEmail(usernameOrEmail);
             if (!user) {
-                throw new Error('Invalid credentials');
+                throw new Error('Invalid Username/email');
             }
 
             if (!user.canLogin()) {
@@ -126,18 +126,18 @@ class AuthenticationService {
                 user.incrementLoginAttempts();
                 this.users.set(user.id, user);
 
-                this.emit('user:login_failed', {
-                    userId: user.id,
-                    username: user.username,
-                    reason: 'invalid_password',
-                    loginAttempts: user.loginAttempts
-                });
+                // this.emit('user:login_failed', {
+                //     userId: user.id,
+                //     username: user.username,
+                //     reason: 'invalid_password',
+                //     loginAttempts: user.loginAttempts
+                // });
 
-                throw new Error('Invalid credentials');
+                // throw new Error('Invalid credentials');
             }
 
             if (!user.isEmailVerified) {
-                throw new Error('Email verification required');
+                // throw new Error('Email verification required');
             }
 
             user.updateLastLogin();
