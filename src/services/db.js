@@ -77,6 +77,11 @@ export default class DatabaseService {
                 version: 2,
                 name: 'add_indexes',
                 up: () => this.migration002_addIndexes()
+            },
+            {
+                version: 3,
+                name: 'migrate_to_unified_users',
+                up: () => this.migration003_migrateToUnifiedUsers()
             }
         ];
 
@@ -243,6 +248,77 @@ export default class DatabaseService {
         this.db.run('CREATE INDEX IF NOT EXISTS idx_task_assigned_to ON task_instances(assigned_to)');
     }
 
+    migration003_migrateToUnifiedUsers() {
+        // Create new users table with integrated authentication
+        const userSchema = Person.schema();
+        const userColumns = Object.entries(userSchema.columns)
+            .map(([name, type]) => `${name} ${type}`)
+            .join(', ');
+
+        this.db.run(`CREATE TABLE IF NOT EXISTS ${userSchema.table} (${userColumns})`);
+
+        // Migrate existing data from persons and person_credentials if they exist
+        try {
+            // Check if old tables exist
+            const tablesQuery = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND (name='persons' OR name='person_credentials')");
+            const existingTables = tablesQuery.length > 0 ? tablesQuery[0].values.flat() : [];
+
+            if (existingTables.includes('persons') && existingTables.includes('person_credentials')) {
+                // Migrate data from old structure to new unified structure
+                const migrateQuery = `
+                    INSERT OR IGNORE INTO users (
+                        id, username, first_name, last_name, primary_email_address,
+                        password_hash, password_salt, is_email_verified,
+                        email_verification_token, email_verification_expires,
+                        password_reset_token, password_reset_expires,
+                        failed_login_attempts, account_locked_until,
+                        last_login_at, is_active, role, created_at, updated_at
+                    )
+                    SELECT
+                        p.id,
+                        SUBSTR(p.primary_email_address, 1, INSTR(p.primary_email_address, '@') - 1) as username,
+                        p.first_name,
+                        p.last_name,
+                        p.primary_email_address,
+                        pc.password_hash,
+                        pc.password_salt,
+                        pc.is_verified,
+                        pc.verification_token,
+                        pc.verification_token_expires,
+                        pc.reset_token,
+                        pc.reset_token_expires,
+                        pc.failed_login_attempts,
+                        pc.locked_until,
+                        pc.last_login_at,
+                        1 as is_active,
+                        'user' as role,
+                        p.created_at,
+                        p.updated_at
+                    FROM persons p
+                    INNER JOIN person_credentials pc ON p.id = pc.person_id
+                `;
+
+                this.db.run(migrateQuery);
+                console.log('Successfully migrated existing users to new unified structure');
+            }
+        } catch (error) {
+            console.log('No existing user data to migrate or migration already completed');
+        }
+
+        // Add indexes for the new users table
+        if (userSchema.indexes) {
+            userSchema.indexes.forEach(indexSql => {
+                try {
+                    this.db.run(indexSql);
+                } catch (error) {
+                    if (!error.message.includes('already exists')) {
+                        console.error('Error creating user index:', error);
+                    }
+                }
+            });
+        }
+    }
+
     // Generic CRUD operations
     async create(tableName, data) {
         try {
@@ -351,13 +427,37 @@ export default class DatabaseService {
 
     // Entity-specific methods
     async createPerson(person) {
-        const data = person.toJSON();
-        return await this.create('persons', data);
+        const data = person.toJSONWithSecrets();
+        return await this.create('users', data);
+    }
+
+    async createUser(user) {
+        const data = user.toJSONWithSecrets();
+        return await this.create('users', data);
     }
 
     async findPersonByEmail(email) {
-        const persons = await this.findMany('persons', { primary_email_address: email });
-        return persons.length > 0 ? Person.fromJSON(persons[0]) : null;
+        const users = await this.findMany('users', { primary_email_address: email });
+        return users.length > 0 ? Person.fromJSON(users[0]) : null;
+    }
+
+    async findUserByEmail(email) {
+        const users = await this.findMany('users', { primary_email_address: email });
+        return users.length > 0 ? Person.fromJSON(users[0]) : null;
+    }
+
+    async findUserByUsername(username) {
+        const users = await this.findMany('users', { username });
+        return users.length > 0 ? Person.fromJSON(users[0]) : null;
+    }
+
+    async findUserByUsernameOrEmail(usernameOrEmail) {
+        // Try email first
+        if (usernameOrEmail.includes('@')) {
+            return await this.findUserByEmail(usernameOrEmail);
+        }
+        // Then try username
+        return await this.findUserByUsername(usernameOrEmail);
     }
 
     async createOrganization(organization) {
@@ -365,7 +465,7 @@ export default class DatabaseService {
         return await this.create('organizations', data);
     }
 
-    async getUserOrganizations(personId) {
+    async getUserOrganizations(userId) {
         try {
             const sql = `
                 SELECT o.* FROM organizations o
@@ -374,7 +474,7 @@ export default class DatabaseService {
                 ORDER BY o.name
             `;
 
-            const result = this.db.exec(sql, [personId]);
+            const result = this.db.exec(sql, [userId]);
 
             if (result.length > 0) {
                 return result[0].values.map(row =>

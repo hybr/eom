@@ -28,11 +28,15 @@ export default class AuthService {
     }
 
     // Authentication methods
-    async signUp({ firstName, lastName, email, password, organizationName = null }) {
+    async signUp({ username, firstName, lastName, email, password, organizationName = null }) {
         try {
             // Validate input
-            if (!firstName?.trim() || !lastName?.trim() || !email?.trim() || !password?.trim()) {
+            if (!username?.trim() || !firstName?.trim() || !lastName?.trim() || !email?.trim() || !password?.trim()) {
                 throw new Error('All fields are required');
+            }
+
+            if (!this.isValidUsername(username)) {
+                throw new Error('Username must be 3-30 characters, alphanumeric and underscores only');
             }
 
             if (!this.isValidEmail(email)) {
@@ -43,50 +47,51 @@ export default class AuthService {
                 throw new Error('Password must be at least 8 characters long and contain uppercase, lowercase, and numbers');
             }
 
-            // Check if user already exists
-            const existingPerson = await this.db.findPersonByEmail(email);
-            if (existingPerson) {
-                throw new Error('User already exists with this email');
+            // Check if username already exists
+            const existingUserByUsername = await this.db.findMany('users', { username });
+            if (existingUserByUsername.length > 0) {
+                throw new Error('Username already exists');
             }
 
-            // Create person
-            const person = new Person({
+            // Check if email already exists
+            const existingUserByEmail = await this.db.findMany('users', { primary_email_address: email });
+            if (existingUserByEmail.length > 0) {
+                throw new Error('Email already exists');
+            }
+
+            // Create user
+            const user = new Person({
+                username,
                 first_name: firstName,
                 last_name: lastName,
-                primary_email_address: email
+                primary_email_address: email,
+                is_email_verified: false // In real app, would require email verification
             });
 
-            const personId = await this.db.createPerson(person);
-
-            // Create credentials
-            const { hash, salt } = await this.hashPassword(password);
-            const credential = new PersonCredential({
-                person_id: personId,
-                email: email,
-                password_hash: hash,
-                password_salt: salt,
-                is_verified: false // In real app, would require email verification
-            });
+            // Set password
+            await user.setPassword(password);
 
             // Generate verification token
-            credential.generateVerificationToken();
+            user.generateEmailVerificationToken();
 
-            await this.db.create('person_credentials', credential.toJSONWithSecrets());
+            await this.db.create('users', user.toJSONWithSecrets());
 
             // If organization name provided, create organization
             if (organizationName?.trim()) {
-                await this.createUserOrganization(personId, organizationName);
+                await this.createUserOrganization(user.id, organizationName);
             }
 
             // In a real app, would send verification email here
             // For demo purposes, auto-verify
-            credential.markAsVerified();
-            await this.db.update('person_credentials', credential.id, credential.toJSONWithSecrets());
+            user.is_email_verified = true;
+            user.email_verification_token = null;
+            user.email_verification_expires = null;
+            await this.db.update('users', user.id, user.toJSONWithSecrets());
 
             return {
                 success: true,
                 message: 'Account created successfully',
-                userId: personId
+                userId: user.id
             };
 
         } catch (error) {
@@ -98,68 +103,74 @@ export default class AuthService {
         }
     }
 
-    async signIn({ email, password }) {
+    async signIn({ usernameOrEmail, password }) {
         try {
-            if (!email?.trim() || !password?.trim()) {
-                throw new Error('Email and password are required');
+            if (!usernameOrEmail?.trim() || !password?.trim()) {
+                throw new Error('Username/email and password are required');
             }
 
-            // Find credentials
-            const credentials = await this.db.findMany('person_credentials', { email });
-            if (credentials.length === 0) {
-                throw new Error('Invalid email or password');
+            // Find user by username or email
+            let users = [];
+            if (this.isValidEmail(usernameOrEmail)) {
+                users = await this.db.findMany('users', { primary_email_address: usernameOrEmail });
+            } else {
+                users = await this.db.findMany('users', { username: usernameOrEmail });
             }
 
-            const credential = PersonCredential.fromJSON(credentials[0]);
+            if (users.length === 0) {
+                throw new Error('Invalid username/email or password');
+            }
 
-            // Check if account is locked
-            if (credential.isAccountLocked()) {
-                throw new Error('Account is temporarily locked due to too many failed login attempts');
+            const user = Person.fromJSON(users[0]);
+
+            // Check if account can login
+            if (!user.canLogin()) {
+                if (user.isAccountLocked()) {
+                    throw new Error('Account is temporarily locked due to too many failed login attempts');
+                }
+                if (!user.is_active) {
+                    throw new Error('Account is deactivated');
+                }
             }
 
             // Verify password
-            const isValidPassword = await this.verifyPassword(password, credential.password_hash, credential.password_salt);
+            const isValidPassword = await user.verifyPassword(password);
             if (!isValidPassword) {
-                credential.recordFailedLogin();
-                await this.db.update('person_credentials', credential.id, credential.toJSONWithSecrets());
-                throw new Error('Invalid email or password');
+                user.recordFailedLogin();
+                await this.db.update('users', user.id, user.toJSONWithSecrets());
+                throw new Error('Invalid username/email or password');
             }
 
             // Check if email is verified
-            if (!credential.is_verified) {
+            if (!user.is_email_verified) {
                 throw new Error('Please verify your email address before signing in');
             }
 
-            // Get person details
-            const person = await this.db.findById('persons', credential.person_id);
-            if (!person) {
-                throw new Error('User account not found');
-            }
-
             // Record successful login
-            credential.recordSuccessfulLogin();
-            await this.db.update('person_credentials', credential.id, credential.toJSONWithSecrets());
+            user.recordSuccessfulLogin();
+            await this.db.update('users', user.id, user.toJSONWithSecrets());
 
             // Generate JWT token (simplified for demo)
             const token = this.generateToken({
-                userId: person.id,
-                email: person.primary_email_address
+                userId: user.id,
+                username: user.username,
+                email: user.primary_email_address
             });
 
             // Set current user
-            this.currentUser = Person.fromJSON(person);
+            this.currentUser = user;
             this.token = token;
 
             // Store in localStorage
             localStorage.setItem('authToken', token);
-            localStorage.setItem('currentUser', JSON.stringify(person));
+            localStorage.setItem('currentUser', JSON.stringify(user.toJSON()));
 
             // Emit authenticated event
             this.emit('authenticated', this.currentUser);
 
             return {
                 success: true,
-                user: this.currentUser,
+                user: this.currentUser.toJSON(),
                 token: token
             };
 
@@ -218,8 +229,12 @@ export default class AuthService {
                 throw new Error('Email is required');
             }
 
-            const credentials = await this.db.findMany('person_credentials', { email });
-            if (credentials.length === 0) {
+            if (!this.isValidEmail(email)) {
+                throw new Error('Invalid email format');
+            }
+
+            const users = await this.db.findMany('users', { primary_email_address: email });
+            if (users.length === 0) {
                 // Don't reveal if email exists for security
                 return {
                     success: true,
@@ -227,10 +242,10 @@ export default class AuthService {
                 };
             }
 
-            const credential = PersonCredential.fromJSON(credentials[0]);
-            const resetToken = credential.generateResetToken();
+            const user = Person.fromJSON(users[0]);
+            const resetToken = user.generatePasswordResetToken();
 
-            await this.db.update('person_credentials', credential.id, credential.toJSONWithSecrets());
+            await this.db.update('users', user.id, user.toJSONWithSecrets());
 
             // In real app, would send email with reset link
             console.log(`Password reset token for ${email}: ${resetToken}`);
@@ -260,25 +275,21 @@ export default class AuthService {
                 throw new Error('Password must be at least 8 characters long and contain uppercase, lowercase, and numbers');
             }
 
-            // Find credential with valid reset token
-            const credentials = await this.db.findMany('person_credentials', { reset_token: token });
-            if (credentials.length === 0) {
+            // Find user with valid reset token
+            const users = await this.db.findMany('users', { password_reset_token: token });
+            if (users.length === 0) {
                 throw new Error('Invalid or expired reset token');
             }
 
-            const credential = PersonCredential.fromJSON(credentials[0]);
+            const user = Person.fromJSON(users[0]);
 
-            if (!credential.isResetTokenValid(token)) {
+            if (!user.isPasswordResetTokenValid(token)) {
                 throw new Error('Invalid or expired reset token');
             }
 
             // Update password
-            const { hash, salt } = await this.hashPassword(newPassword);
-            credential.password_hash = hash;
-            credential.password_salt = salt;
-            credential.clearResetToken();
-
-            await this.db.update('person_credentials', credential.id, credential.toJSONWithSecrets());
+            await user.resetPassword(token, newPassword);
+            await this.db.update('users', user.id, user.toJSONWithSecrets());
 
             return {
                 success: true,
@@ -308,34 +319,15 @@ export default class AuthService {
                 throw new Error('New password must be at least 8 characters long and contain uppercase, lowercase, and numbers');
             }
 
-            // Get current credentials
-            const credentials = await this.db.findMany('person_credentials', {
-                person_id: this.currentUser.id
-            });
-
-            if (credentials.length === 0) {
-                throw new Error('User credentials not found');
-            }
-
-            const credential = PersonCredential.fromJSON(credentials[0]);
-
             // Verify current password
-            const isValidCurrentPassword = await this.verifyPassword(
-                currentPassword,
-                credential.password_hash,
-                credential.password_salt
-            );
-
+            const isValidCurrentPassword = await this.currentUser.verifyPassword(currentPassword);
             if (!isValidCurrentPassword) {
                 throw new Error('Current password is incorrect');
             }
 
             // Update password
-            const { hash, salt } = await this.hashPassword(newPassword);
-            credential.password_hash = hash;
-            credential.password_salt = salt;
-
-            await this.db.update('person_credentials', credential.id, credential.toJSONWithSecrets());
+            await this.currentUser.setPassword(newPassword);
+            await this.db.update('users', this.currentUser.id, this.currentUser.toJSONWithSecrets());
 
             return {
                 success: true,
@@ -357,34 +349,17 @@ export default class AuthService {
         return emailRegex.test(email);
     }
 
+    isValidUsername(username) {
+        const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+        return usernameRegex.test(username);
+    }
+
     isValidPassword(password) {
         // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
         return passwordRegex.test(password);
     }
 
-    async hashPassword(password, salt = null) {
-        // Generate salt if not provided
-        if (!salt) {
-            salt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
-        }
-
-        const encoder = new TextEncoder();
-        const data = encoder.encode(password + salt);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hash = Array.from(new Uint8Array(hashBuffer))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-
-        return { hash, salt };
-    }
-
-    async verifyPassword(password, hash, salt) {
-        const { hash: computedHash } = await this.hashPassword(password, salt);
-        return computedHash === hash;
-    }
 
     generateToken(payload) {
         // Simplified JWT-like token for demo
@@ -409,14 +384,14 @@ export default class AuthService {
         }
     }
 
-    async createUserOrganization(personId, organizationName) {
+    async createUserOrganization(userId, organizationName) {
         const { default: Organization } = await import('../entities/Organization.js');
         const { default: OrganizationMember } = await import('../entities/OrganizationMember.js');
 
         // Create organization
         const organization = new Organization({
             name: organizationName,
-            created_by: personId
+            created_by: userId
         });
 
         const orgId = await this.db.createOrganization(organization);
@@ -424,7 +399,7 @@ export default class AuthService {
         // Add user as creator/admin
         const member = new OrganizationMember({
             organization_id: orgId,
-            person_id: personId,
+            person_id: userId, // Note: Still using person_id for compatibility with existing schema
             roles: [OrganizationMember.ROLES.CREATOR, OrganizationMember.ROLES.ADMIN],
             status: OrganizationMember.STATUS.ACTIVE
         });

@@ -25,8 +25,8 @@ export default class AuthComponent {
                 <div id="signin-tab" class="auth-tab-content">
                     <form id="signin-form">
                         <div class="form-group">
-                            <label for="signin-email">Email</label>
-                            <input type="email" id="signin-email" name="email" required autocomplete="email">
+                            <label for="signin-username">Username or Email</label>
+                            <input type="text" id="signin-username" name="usernameOrEmail" required autocomplete="username" placeholder="Enter your username or email">
                         </div>
                         <div class="form-group">
                             <label for="signin-password">Password</label>
@@ -41,16 +41,24 @@ export default class AuthComponent {
                 <div id="signup-tab" class="auth-tab-content">
                     <form id="signup-form">
                         <div class="form-group">
-                            <label for="signup-first-name">First Name</label>
-                            <input type="text" id="signup-first-name" name="firstName" required autocomplete="given-name">
+                            <label for="signup-username">Username</label>
+                            <input type="text" id="signup-username" name="username" required autocomplete="username" placeholder="Choose a unique username">
+                            <small class="form-help">3-30 characters, letters, numbers, and underscores only</small>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="signup-first-name">First Name</label>
+                                <input type="text" id="signup-first-name" name="firstName" required autocomplete="given-name">
+                            </div>
+                            <div class="form-group">
+                                <label for="signup-last-name">Last Name</label>
+                                <input type="text" id="signup-last-name" name="lastName" required autocomplete="family-name">
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="signup-last-name">Last Name</label>
-                            <input type="text" id="signup-last-name" name="lastName" required autocomplete="family-name">
-                        </div>
-                        <div class="form-group">
-                            <label for="signup-email">Email</label>
-                            <input type="email" id="signup-email" name="email" required autocomplete="email">
+                            <label for="signup-email">Email Address</label>
+                            <input type="email" id="signup-email" name="email" required autocomplete="email" placeholder="Used for password reset and notifications">
+                            <small class="form-help">We'll use this for password recovery</small>
                         </div>
                         <div class="form-group">
                             <label for="signup-password">Password</label>
@@ -78,10 +86,14 @@ export default class AuthComponent {
 
                 <!-- Forgot Password Form -->
                 <div id="forgot-password-tab" class="auth-tab-content">
+                    <div class="forgot-password-info">
+                        <h3>Reset Your Password</h3>
+                        <p>Enter your email address and we'll send you a link to reset your password.</p>
+                    </div>
                     <form id="forgot-password-form">
                         <div class="form-group">
-                            <label for="forgot-email">Email</label>
-                            <input type="email" id="forgot-email" name="email" required>
+                            <label for="forgot-email">Email Address</label>
+                            <input type="email" id="forgot-email" name="email" required placeholder="Enter your email address">
                         </div>
                         <button type="submit" class="btn btn-primary">Send Reset Link</button>
                         <button type="button" id="back-to-signin" class="btn btn-secondary">Back to Sign In</button>
@@ -125,6 +137,14 @@ export default class AuthComponent {
             if (passwordInput) {
                 passwordInput.addEventListener('input', () => {
                     this.validatePassword(passwordInput.value);
+                });
+            }
+
+            // Username validation
+            const usernameInput = document.getElementById('signup-username');
+            if (usernameInput) {
+                usernameInput.addEventListener('input', () => {
+                    this.validateUsername(usernameInput.value);
                 });
             }
         }
@@ -190,7 +210,7 @@ export default class AuthComponent {
 
         const formData = new FormData(form);
         const data = {
-            email: formData.get('email'),
+            usernameOrEmail: formData.get('usernameOrEmail'),
             password: formData.get('password')
         };
 
@@ -225,6 +245,7 @@ export default class AuthComponent {
 
         const formData = new FormData(form);
         const data = {
+            username: formData.get('username'),
             firstName: formData.get('firstName'),
             lastName: formData.get('lastName'),
             email: formData.get('email'),
@@ -306,6 +327,28 @@ export default class AuthComponent {
                 }
             }
         });
+    }
+
+    validateUsername(username) {
+        const usernameInput = document.getElementById('signup-username');
+        const helpText = usernameInput?.parentElement.querySelector('.form-help');
+
+        if (!usernameInput) return;
+
+        const isValid = /^[a-zA-Z0-9_]{3,30}$/.test(username);
+
+        if (username.length === 0) {
+            usernameInput.classList.remove('valid', 'invalid');
+            if (helpText) helpText.textContent = '3-30 characters, letters, numbers, and underscores only';
+        } else if (isValid) {
+            usernameInput.classList.remove('invalid');
+            usernameInput.classList.add('valid');
+            if (helpText) helpText.textContent = 'Username looks good!';
+        } else {
+            usernameInput.classList.remove('valid');
+            usernameInput.classList.add('invalid');
+            if (helpText) helpText.textContent = 'Username must be 3-30 characters, letters, numbers, and underscores only';
+        }
     }
 
     showMessage(message, type = 'info') {

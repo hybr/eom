@@ -198,5 +198,7 @@ export default class App {
     }
 }
 
-// Make app instance globally available
-window.app = null;
+// Make app instance globally available (only in browser environment)
+if (typeof window !== 'undefined') {
+    window.app = null;
+}
