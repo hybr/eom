@@ -1,335 +1,283 @@
-class Organization {
-    constructor(data = {}) {
-        this.id = data.id || this.generateId();
-        this.name = data.name || '';
-        this.description = data.description || '';
-        this.website = data.website || '';
-        this.address = data.address || {};
-        this.contactEmail = data.contactEmail || '';
-        this.contactPhone = data.contactPhone || '';
-        this.isActive = data.isActive !== undefined ? data.isActive : true;
-        this.settings = data.settings || {};
-        this.createdAt = data.createdAt || new Date().toISOString();
-        this.updatedAt = data.updatedAt || new Date().toISOString();
-        this.userIds = data.userIds || [];
-        this.adminIds = data.adminIds || [];
+export default class Organization {
+    constructor({
+        id = null,
+        name = '',
+        display_name = '',
+        description = '',
+        website_url = '',
+        logo_url = '',
+        primary_color = '#1976d2',
+        secondary_color = '#dc004e',
+        industry = '',
+        size = '',
+        headquarters_address = '',
+        phone_number = '',
+        email_address = '',
+        tax_id = '',
+        is_active = true,
+        subdomain = '',
+        custom_domain = '',
+        subscription_plan = 'free',
+        subscription_expires_at = null,
+        created_by = null,
+        created_at = null,
+        updated_at = null
+    } = {}) {
+        this.id = id || `O_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        this.name = name;
+        this.display_name = display_name || name;
+        this.description = description;
+        this.website_url = website_url;
+        this.logo_url = logo_url;
+        this.primary_color = primary_color;
+        this.secondary_color = secondary_color;
+        this.industry = industry;
+        this.size = size;
+        this.headquarters_address = headquarters_address;
+        this.phone_number = phone_number;
+        this.email_address = email_address;
+        this.tax_id = tax_id;
+        this.is_active = is_active;
+        this.subdomain = subdomain || this.generateSubdomain(name);
+        this.custom_domain = custom_domain;
+        this.subscription_plan = subscription_plan;
+        this.subscription_expires_at = subscription_expires_at;
+        this.created_by = created_by;
+        this.created_at = created_at || new Date().toISOString();
+        this.updated_at = updated_at || new Date().toISOString();
     }
 
-    generateId() {
-        return 'org_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-
-    addUser(userId, role = 'member') {
-        if (!this.userIds.includes(userId)) {
-            this.userIds.push(userId);
-            if ((role === 'admin' || role === 'owner') && !this.adminIds.includes(userId)) {
-                this.adminIds.push(userId);
-            }
-            this.updatedAt = new Date().toISOString();
-            return true;
-        }
-        return false;
-    }
-
-    inviteUser(email, role = 'member', invitedBy = null) {
-        const invitation = {
-            id: this.generateInvitationId(),
-            email,
-            role,
-            invitedBy,
-            status: 'pending',
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+    static schema() {
+        return {
+            table: 'organizations',
+            columns: {
+                id: 'TEXT PRIMARY KEY',
+                name: 'TEXT NOT NULL',
+                display_name: 'TEXT NOT NULL',
+                description: 'TEXT',
+                website_url: 'TEXT',
+                logo_url: 'TEXT',
+                primary_color: 'TEXT DEFAULT "#1976d2"',
+                secondary_color: 'TEXT DEFAULT "#dc004e"',
+                industry: 'TEXT',
+                size: 'TEXT',
+                headquarters_address: 'TEXT',
+                phone_number: 'TEXT',
+                email_address: 'TEXT',
+                tax_id: 'TEXT',
+                is_active: 'BOOLEAN DEFAULT 1',
+                subdomain: 'TEXT UNIQUE',
+                custom_domain: 'TEXT',
+                subscription_plan: 'TEXT DEFAULT "free"',
+                subscription_expires_at: 'DATETIME',
+                created_by: 'TEXT',
+                created_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+                updated_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP'
+            },
+            indexes: [
+                'CREATE INDEX idx_organization_name ON organizations(name)',
+                'CREATE INDEX idx_organization_subdomain ON organizations(subdomain)',
+                'CREATE INDEX idx_organization_domain ON organizations(custom_domain)',
+                'CREATE INDEX idx_organization_created_by ON organizations(created_by)'
+            ]
         };
-
-        if (!this.invitations) {
-            this.invitations = [];
-        }
-
-        // Remove any existing invitation for this email
-        this.invitations = this.invitations.filter(inv => inv.email !== email);
-        this.invitations.push(invitation);
-        this.updatedAt = new Date().toISOString();
-
-        return invitation;
     }
 
-    acceptInvitation(invitationId, userId) {
-        if (!this.invitations) {
-            this.invitations = [];
+    validate() {
+        const errors = [];
+
+        if (!this.name?.trim()) {
+            errors.push('Organization name is required');
         }
 
-        const invitation = this.invitations.find(inv => inv.id === invitationId);
-        if (!invitation) {
-            throw new Error('Invitation not found');
+        if (!this.display_name?.trim()) {
+            errors.push('Display name is required');
         }
 
-        if (invitation.status !== 'pending') {
-            throw new Error('Invitation already processed');
+        if (this.website_url && !this.isValidUrl(this.website_url)) {
+            errors.push('Invalid website URL');
         }
 
-        if (new Date() > new Date(invitation.expiresAt)) {
-            throw new Error('Invitation has expired');
+        if (this.logo_url && !this.isValidUrl(this.logo_url)) {
+            errors.push('Invalid logo URL');
         }
 
-        this.addUser(userId, invitation.role);
-        invitation.status = 'accepted';
-        invitation.acceptedAt = new Date().toISOString();
-        invitation.acceptedBy = userId;
-        this.updatedAt = new Date().toISOString();
+        if (this.email_address && !this.isValidEmail(this.email_address)) {
+            errors.push('Invalid email address');
+        }
 
-        return true;
+        if (this.subdomain && !this.isValidSubdomain(this.subdomain)) {
+            errors.push('Invalid subdomain format');
+        }
+
+        if (this.custom_domain && !this.isValidDomain(this.custom_domain)) {
+            errors.push('Invalid custom domain');
+        }
+
+        if (!this.isValidColor(this.primary_color)) {
+            errors.push('Invalid primary color format');
+        }
+
+        if (!this.isValidColor(this.secondary_color)) {
+            errors.push('Invalid secondary color format');
+        }
+
+        return errors;
     }
 
-    declineInvitation(invitationId, userId = null) {
-        if (!this.invitations) {
-            this.invitations = [];
-        }
-
-        const invitation = this.invitations.find(inv => inv.id === invitationId);
-        if (!invitation) {
-            throw new Error('Invitation not found');
-        }
-
-        if (invitation.status !== 'pending') {
-            throw new Error('Invitation already processed');
-        }
-
-        invitation.status = 'declined';
-        invitation.declinedAt = new Date().toISOString();
-        if (userId) {
-            invitation.declinedBy = userId;
-        }
-        this.updatedAt = new Date().toISOString();
-
-        return true;
-    }
-
-    cancelInvitation(invitationId) {
-        if (!this.invitations) {
-            this.invitations = [];
-        }
-
-        const invitationIndex = this.invitations.findIndex(inv => inv.id === invitationId);
-        if (invitationIndex === -1) {
-            throw new Error('Invitation not found');
-        }
-
-        this.invitations.splice(invitationIndex, 1);
-        this.updatedAt = new Date().toISOString();
-
-        return true;
-    }
-
-    removeUser(userId) {
-        const userIndex = this.userIds.indexOf(userId);
-        if (userIndex > -1) {
-            this.userIds.splice(userIndex, 1);
-        }
-
-        const adminIndex = this.adminIds.indexOf(userId);
-        if (adminIndex > -1) {
-            this.adminIds.splice(adminIndex, 1);
-        }
-
-        this.updatedAt = new Date().toISOString();
-    }
-
-    promoteToAdmin(userId) {
-        if (this.userIds.includes(userId) && !this.adminIds.includes(userId)) {
-            this.adminIds.push(userId);
-            this.updatedAt = new Date().toISOString();
+    isValidUrl(url) {
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
         }
     }
 
-    demoteFromAdmin(userId) {
-        const adminIndex = this.adminIds.indexOf(userId);
-        if (adminIndex > -1) {
-            this.adminIds.splice(adminIndex, 1);
-            this.updatedAt = new Date().toISOString();
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    isValidSubdomain(subdomain) {
+        const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+        return subdomain.length >= 3 && subdomain.length <= 63 && subdomainRegex.test(subdomain);
+    }
+
+    isValidDomain(domain) {
+        const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/;
+        return domainRegex.test(domain);
+    }
+
+    isValidColor(color) {
+        const hexRegex = /^#[0-9A-F]{6}$/i;
+        return hexRegex.test(color);
+    }
+
+    generateSubdomain(name) {
+        if (!name) return '';
+
+        return name
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+            .substring(0, 63);
+    }
+
+    getUrl() {
+        if (this.custom_domain) {
+            return `https://${this.custom_domain}`;
         }
-    }
-
-    isUserAdmin(userId) {
-        return this.adminIds.includes(userId);
-    }
-
-    isUserMember(userId) {
-        return this.userIds.includes(userId);
-    }
-
-    getUserCount() {
-        return this.userIds.length;
-    }
-
-    getAdminCount() {
-        return this.adminIds.length;
-    }
-
-    updateSetting(key, value) {
-        this.settings[key] = value;
-        this.updatedAt = new Date().toISOString();
-    }
-
-    getSetting(key, defaultValue = null) {
-        return this.settings[key] !== undefined ? this.settings[key] : defaultValue;
-    }
-
-    deactivate() {
-        this.isActive = false;
-        this.updatedAt = new Date().toISOString();
-    }
-
-    activate() {
-        this.isActive = true;
-        this.updatedAt = new Date().toISOString();
-    }
-
-    getUserRole(userId) {
-        if (!this.isUserMember(userId)) {
-            return null;
+        if (this.subdomain) {
+            return `https://${this.subdomain}.v4l.app`;
         }
-
-        if (this.isUserAdmin(userId)) {
-            return 'admin';
-        }
-
-        return 'member';
+        return null;
     }
 
-    updateUserRole(userId, newRole) {
-        if (!this.isUserMember(userId)) {
-            throw new Error('User is not a member of this organization');
+    isSubscriptionActive() {
+        if (!this.subscription_expires_at) {
+            return this.subscription_plan === 'free';
+        }
+        return new Date(this.subscription_expires_at) > new Date();
+    }
+
+    getSubscriptionStatus() {
+        if (this.subscription_plan === 'free') {
+            return 'free';
         }
 
-        if (newRole === 'admin' || newRole === 'owner') {
-            if (!this.adminIds.includes(userId)) {
-                this.adminIds.push(userId);
-            }
-        } else {
-            this.demoteFromAdmin(userId);
+        if (!this.subscription_expires_at) {
+            return 'unknown';
         }
 
-        this.updatedAt = new Date().toISOString();
-        return true;
-    }
-
-    getUserPermissions(userId) {
-        const role = this.getUserRole(userId);
-        if (!role) {
-            return [];
-        }
-
-        const permissions = ['view_organization'];
-
-        if (role === 'admin' || role === 'owner') {
-            permissions.push(
-                'manage_users',
-                'invite_users',
-                'edit_organization',
-                'manage_processes',
-                'manage_projects',
-                'view_analytics'
-            );
-        } else {
-            permissions.push(
-                'create_processes',
-                'execute_processes',
-                'view_projects'
-            );
-        }
-
-        return permissions;
-    }
-
-    hasPermission(userId, permission) {
-        const permissions = this.getUserPermissions(userId);
-        return permissions.includes(permission);
-    }
-
-    getInvitations(status = null) {
-        if (!this.invitations) {
-            return [];
-        }
-
-        if (status) {
-            return this.invitations.filter(inv => inv.status === status);
-        }
-
-        return [...this.invitations];
-    }
-
-    getPendingInvitations() {
-        return this.getInvitations('pending');
-    }
-
-    cleanupExpiredInvitations() {
-        if (!this.invitations) {
-            return 0;
-        }
-
-        const before = this.invitations.length;
+        const expiresAt = new Date(this.subscription_expires_at);
         const now = new Date();
 
-        this.invitations = this.invitations.filter(inv => {
-            return inv.status !== 'pending' || new Date(inv.expiresAt) > now;
-        });
-
-        const removed = before - this.invitations.length;
-        if (removed > 0) {
-            this.updatedAt = new Date().toISOString();
+        if (expiresAt > now) {
+            const daysUntilExpiry = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry <= 7) {
+                return 'expiring_soon';
+            }
+            return 'active';
         }
 
-        return removed;
+        return 'expired';
     }
 
-    generateInvitationId() {
-        return 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-
-    getStats() {
-        return {
-            totalUsers: this.getUserCount(),
-            admins: this.getAdminCount(),
-            members: this.getUserCount() - this.getAdminCount(),
-            pendingInvitations: this.getPendingInvitations().length,
-            isActive: this.isActive,
-            createdAt: this.createdAt
-        };
-    }
-
-    update(data) {
-        const allowedFields = ['name', 'description', 'website', 'address', 'contactEmail', 'contactPhone'];
-        allowedFields.forEach(field => {
-            if (data[field] !== undefined) {
-                this[field] = data[field];
+    getFeatures() {
+        const features = {
+            free: {
+                maxMembers: 5,
+                maxProjects: 3,
+                storage: '1GB',
+                support: 'community'
+            },
+            basic: {
+                maxMembers: 25,
+                maxProjects: 10,
+                storage: '10GB',
+                support: 'email'
+            },
+            pro: {
+                maxMembers: 100,
+                maxProjects: 50,
+                storage: '100GB',
+                support: 'priority'
+            },
+            enterprise: {
+                maxMembers: -1, // unlimited
+                maxProjects: -1, // unlimited
+                storage: 'unlimited',
+                support: 'dedicated'
             }
-        });
-        this.updatedAt = new Date().toISOString();
+        };
+
+        return features[this.subscription_plan] || features.free;
     }
 
     toJSON() {
         return {
             id: this.id,
             name: this.name,
+            display_name: this.display_name,
             description: this.description,
-            website: this.website,
-            address: this.address,
-            contactEmail: this.contactEmail,
-            contactPhone: this.contactPhone,
-            isActive: this.isActive,
-            settings: { ...this.settings },
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt,
-            userIds: [...this.userIds],
-            adminIds: [...this.adminIds],
-            invitations: this.invitations ? [...this.invitations] : []
+            website_url: this.website_url,
+            logo_url: this.logo_url,
+            primary_color: this.primary_color,
+            secondary_color: this.secondary_color,
+            industry: this.industry,
+            size: this.size,
+            headquarters_address: this.headquarters_address,
+            phone_number: this.phone_number,
+            email_address: this.email_address,
+            tax_id: this.tax_id,
+            is_active: this.is_active,
+            subdomain: this.subdomain,
+            custom_domain: this.custom_domain,
+            subscription_plan: this.subscription_plan,
+            subscription_expires_at: this.subscription_expires_at,
+            created_by: this.created_by,
+            created_at: this.created_at,
+            updated_at: this.updated_at
         };
     }
 
-    static fromJSON(data) {
-        return new Organization(data);
+    static fromJSON(obj) {
+        return new Organization(obj);
+    }
+
+    update(data) {
+        Object.keys(data).forEach(key => {
+            if (key !== 'id' && key !== 'created_at' && this.hasOwnProperty(key)) {
+                this[key] = data[key];
+            }
+        });
+        this.updated_at = new Date().toISOString();
+        return this;
+    }
+
+    clone() {
+        return Organization.fromJSON(this.toJSON());
     }
 }
-
-export default Organization;
