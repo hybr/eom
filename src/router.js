@@ -6,7 +6,9 @@ const routes = [
     { path: /^\/entity\/person\/?$/, component: () => import('./pages/person-page.js') },
     { path: /^\/entity\/organization\/?$/, component: () => import('./pages/organization-page.js') },
     { path: /^\/entity\/person-credential\/?$/, component: () => import('./pages/person-credential-page.js') },
-    { path: /^\/entity\/continent\/?$/, component: () => import('./pages/continent-page.js') }
+    { path: /^\/entity\/continent\/?$/, component: () => import('./pages/continent-page.js') },
+    { path: /^\/entity\/country\/?$/, component: () => import('./pages/country-page.js') },
+    { path: /^\/entity\/organization-legal-type\/?$/, component: () => import('./pages/organization-legal-type-page.js') }
 ]
 
 export async function router(appElement) {

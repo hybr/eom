@@ -9,6 +9,8 @@ import personCredentialsRouter from './routes/person-credentials.js'
 import signupRouter from './routes/signup.js'
 import authRouter from './routes/auth.js'
 import continentsRouter from './routes/continents.js'
+import countriesRouter from './routes/countries.js'
+import organizationLegalTypesRouter from './routes/organization-legal-types.js'
 
 const app = express()
 const server = createServer(app)
@@ -41,6 +43,8 @@ app.use('/api/person-credentials', personCredentialsRouter)
 app.use('/api/signup', signupRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/continents', continentsRouter)
+app.use('/api/countries', countriesRouter)
+app.use('/api/organization-legal-types', organizationLegalTypesRouter)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

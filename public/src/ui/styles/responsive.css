@@ -1,0 +1,345 @@
+/* Mobile First Responsive Design */
+
+/* Small devices (up to 639px) - Default styles already mobile-first */
+
+/* Small devices and up (640px and up) */
+@media (min-width: 640px) {
+  .main-content {
+    padding-top: calc(var(--header-height) + var(--spacing-md));
+    padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-md));
+  }
+
+  .bottom-nav {
+    padding: 0 var(--spacing-lg);
+  }
+
+  .bottom-nav .nav-item {
+    min-width: 80px;
+    padding: var(--spacing-md);
+  }
+
+  .nav-icon {
+    font-size: var(--font-size-2xl);
+  }
+
+  .nav-label {
+    font-size: var(--font-size-sm);
+  }
+
+  .org-selector {
+    min-width: 250px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+
+  .modal {
+    padding: var(--spacing-xl);
+  }
+
+  .modal-content {
+    max-width: 600px;
+  }
+
+  .auth-modal {
+    max-width: 450px;
+  }
+}
+
+/* Medium devices and up (768px and up) */
+@media (min-width: 768px) {
+  .top-nav {
+    padding: 0 var(--spacing-xl);
+  }
+
+  .nav-center h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .main-content {
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+  }
+
+  .page-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  .page-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .org-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Hide bottom nav on larger screens in favor of sidebar or different navigation */
+  .bottom-nav {
+    display: none;
+  }
+
+  .main-content {
+    padding-bottom: var(--spacing-lg);
+  }
+
+  /* Add sidebar navigation for larger screens */
+  .app-layout {
+    display: flex;
+  }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    height: calc(100vh - var(--header-height));
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    overflow-y: auto;
+    z-index: var(--z-index-sticky);
+  }
+
+  .main-content {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+  }
+
+  .sidebar-nav {
+    padding: var(--spacing-lg);
+  }
+
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    text-decoration: none;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-sm);
+    transition: background-color var(--transition-fast);
+  }
+
+  .sidebar-nav-item:hover {
+    background-color: var(--color-surface-variant);
+  }
+
+  .sidebar-nav-item.active {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+  }
+
+  .sidebar-nav-icon {
+    margin-right: var(--spacing-md);
+    font-size: var(--font-size-lg);
+    width: 24px;
+    text-align: center;
+  }
+}
+
+/* Large devices and up (1024px and up) */
+@media (min-width: 1024px) {
+  .main-content {
+    padding-left: var(--spacing-xxl);
+    padding-right: var(--spacing-xxl);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .org-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .data-table {
+    font-size: var(--font-size-base);
+  }
+
+  .widget {
+    min-height: 300px;
+  }
+
+  .modal-content {
+    max-width: 800px;
+  }
+
+  /* Enhanced grid layouts for larger screens */
+  .grid-lg-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .grid-lg-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* Extra large devices and up (1280px and up) */
+@media (min-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .org-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .main-content {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+  }
+
+  /* For very large screens, add max-width to prevent content from becoming too wide */
+  .sidebar {
+    position: relative;
+    width: var(--sidebar-width);
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+  }
+}
+
+/* High DPI / Retina displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .org-logo-btn img,
+  .user-menu-btn img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Landscape orientation on mobile devices */
+@media (orientation: landscape) and (max-height: 600px) {
+  .bottom-nav {
+    height: 60px;
+  }
+
+  .bottom-nav .nav-item {
+    padding: var(--spacing-xs);
+  }
+
+  .nav-icon {
+    font-size: var(--font-size-lg);
+    margin-bottom: 2px;
+  }
+
+  .nav-label {
+    font-size: 0.65rem;
+  }
+
+  .main-content {
+    padding-bottom: 60px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .top-nav,
+  .bottom-nav,
+  .sidebar,
+  .theme-toggle,
+  .user-menu,
+  .modal {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .card,
+  .widget {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .org-card:hover {
+    transform: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+
+  * {
+    transition: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .card,
+  .widget,
+  .modal-content {
+    border: 2px solid var(--color-border);
+  }
+
+  .btn {
+    border: 2px solid;
+  }
+
+  .btn-primary {
+    border-color: var(--color-primary);
+  }
+
+  .btn-secondary {
+    border-color: var(--color-text-primary);
+  }
+}
+
+/* Focus management for keyboard navigation */
+@media (prefers-reduced-motion: no-preference) {
+  *:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Touch-friendly targets for mobile */
+@media (pointer: coarse) {
+  .btn,
+  .nav-item,
+  .user-menu-btn,
+  .org-logo-btn,
+  .theme-toggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .list-item {
+    min-height: 48px;
+  }
+
+  .form-input,
+  .form-select {
+    min-height: 44px;
+  }
+}

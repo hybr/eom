@@ -11,7 +11,11 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(cmd //c:*)"
+      "Bash(cmd //c:*)",
+      "Bash(curl:*)",
+      "Bash(cmd /c:*)",
+      "Bash(tree-kill:*)",
+      "Bash(PORT=3001 node server.js)"
     ],
     "deny": [],
     "ask": []
