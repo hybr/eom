@@ -6,7 +6,12 @@
       "Bash(node:*)",
       "Read(//c/**)",
       "Bash(npm start)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd //c:*)"
     ],
     "deny": [],
     "ask": []
