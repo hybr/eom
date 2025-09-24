@@ -1,0 +1,351 @@
+{
+  "name": "Order",
+  "displayName": "Order",
+  "description": "Order management entity for e-commerce functionality",
+  "attributes": {
+    "id": {
+      "type": "integer",
+      "required": true,
+      "unique": true,
+      "displayName": "Order ID",
+      "ui": {
+        "readonly": true
+      }
+    },
+    "userId": {
+      "type": "integer",
+      "required": true,
+      "displayName": "User ID",
+      "description": "ID of the user who placed the order",
+      "ui": {
+        "hidden": true
+      }
+    },
+    "orderNumber": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "length": 50,
+      "displayName": "Order Number",
+      "description": "Unique order reference number",
+      "ui": {
+        "readonly": true
+      }
+    },
+    "status": {
+      "type": "string",
+      "required": true,
+      "enum": ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"],
+      "default": "pending",
+      "displayName": "Status",
+      "description": "Current order status",
+      "ui": {
+        "widget": "select"
+      }
+    },
+    "total": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "displayName": "Total Amount",
+      "description": "Total order amount including tax and shipping",
+      "ui": {
+        "widget": "number",
+        "readonly": true
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "displayName": "Subtotal",
+      "description": "Order subtotal before tax and shipping",
+      "ui": {
+        "widget": "number",
+        "readonly": true
+      }
+    },
+    "tax": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "default": 0,
+      "displayName": "Tax Amount",
+      "ui": {
+        "widget": "number"
+      }
+    },
+    "shipping": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "default": 0,
+      "displayName": "Shipping Cost",
+      "ui": {
+        "widget": "number"
+      }
+    },
+    "shippingAddress": {
+      "type": "text",
+      "required": true,
+      "displayName": "Shipping Address",
+      "ui": {
+        "widget": "textarea"
+      }
+    },
+    "billingAddress": {
+      "type": "text",
+      "required": true,
+      "displayName": "Billing Address",
+      "ui": {
+        "widget": "textarea"
+      }
+    },
+    "notes": {
+      "type": "text",
+      "displayName": "Order Notes",
+      "description": "Additional notes or special instructions",
+      "ui": {
+        "widget": "textarea"
+      }
+    },
+    "orderDate": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Order Date",
+      "ui": {
+        "readonly": true
+      }
+    },
+    "shippedDate": {
+      "type": "datetime",
+      "displayName": "Shipped Date",
+      "ui": {
+        "readonly": true
+      }
+    },
+    "deliveredDate": {
+      "type": "datetime",
+      "displayName": "Delivered Date",
+      "ui": {
+        "readonly": true
+      }
+    },
+    "createdAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Created At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    },
+    "updatedAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Updated At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    }
+  },
+  "methods": {
+    "process": {
+      "action": "custom",
+      "displayName": "Process Order",
+      "description": "Move order from pending to processing status",
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["status == 'pending'"]
+      },
+      "ui": {
+        "button": {
+          "text": "Process",
+          "icon": "fas fa-play-circle",
+          "class": "btn-primary"
+        },
+        "position": "both"
+      }
+    },
+    "ship": {
+      "action": "custom",
+      "displayName": "Mark as Shipped",
+      "description": "Mark order as shipped and set shipped date",
+      "parameters": {
+        "trackingNumber": {
+          "type": "string",
+          "required": true,
+          "displayName": "Tracking Number",
+          "ui": {
+            "widget": "text",
+            "placeholder": "Enter tracking number"
+          }
+        },
+        "carrier": {
+          "type": "string",
+          "required": true,
+          "enum": ["UPS", "FedEx", "USPS", "DHL"],
+          "displayName": "Carrier",
+          "ui": {
+            "widget": "select"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["status == 'processing'"]
+      },
+      "ui": {
+        "button": {
+          "text": "Ship Order",
+          "icon": "fas fa-shipping-fast",
+          "class": "btn-info"
+        },
+        "position": "both"
+      }
+    },
+    "cancel": {
+      "action": "custom",
+      "displayName": "Cancel Order",
+      "description": "Cancel the order and update status",
+      "parameters": {
+        "reason": {
+          "type": "text",
+          "required": true,
+          "displayName": "Cancellation Reason",
+          "ui": {
+            "widget": "textarea",
+            "placeholder": "Enter reason for cancellation"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["status in ['pending', 'processing']"]
+      },
+      "ui": {
+        "button": {
+          "text": "Cancel Order",
+          "icon": "fas fa-times-circle",
+          "class": "btn-danger",
+          "confirm": true,
+          "confirmMessage": "Are you sure you want to cancel this order?"
+        },
+        "position": "both"
+      }
+    },
+    "refund": {
+      "action": "custom",
+      "displayName": "Process Refund",
+      "description": "Process a refund for the order",
+      "parameters": {
+        "amount": {
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "displayName": "Refund Amount",
+          "ui": {
+            "widget": "number",
+            "placeholder": "Enter refund amount"
+          }
+        },
+        "reason": {
+          "type": "text",
+          "required": true,
+          "displayName": "Refund Reason",
+          "ui": {
+            "widget": "textarea",
+            "placeholder": "Enter reason for refund"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["status in ['delivered', 'cancelled']"]
+      },
+      "ui": {
+        "button": {
+          "text": "Process Refund",
+          "icon": "fas fa-undo",
+          "class": "btn-warning",
+          "confirm": true,
+          "confirmMessage": "Are you sure you want to process this refund?"
+        },
+        "position": "detail"
+      }
+    }
+  },
+  "relationships": {
+    "user": {
+      "type": "manyToOne",
+      "target": "User",
+      "foreignKey": "userId",
+      "displayName": "Customer"
+    },
+    "orderItems": {
+      "type": "oneToMany",
+      "target": "OrderItem",
+      "foreignKey": "orderId",
+      "displayName": "Order Items"
+    }
+  },
+  "permissions": {
+    "create": ["admin", "manager", "user"],
+    "read": ["admin", "manager", "user-owner"],
+    "update": ["admin", "manager"],
+    "delete": ["admin"]
+  },
+  "validation": {
+    "rules": [
+      {
+        "field": "total",
+        "rule": "equals",
+        "message": "Total must equal subtotal + tax + shipping"
+      }
+    ],
+    "custom": "validateOrderTotals"
+  },
+  "ui": {
+    "listView": {
+      "columns": ["orderNumber", "user", "status", "total", "orderDate", "shippedDate"],
+      "sortable": ["orderNumber", "status", "total", "orderDate", "shippedDate"],
+      "searchable": ["orderNumber"],
+      "filterable": ["status"]
+    },
+    "formView": {
+      "layout": "two-column",
+      "sections": [
+        {
+          "title": "Order Details",
+          "fields": ["status", "notes"]
+        },
+        {
+          "title": "Pricing",
+          "fields": ["subtotal", "tax", "shipping", "total"]
+        },
+        {
+          "title": "Addresses",
+          "fields": ["shippingAddress", "billingAddress"]
+        }
+      ]
+    },
+    "detailView": {
+      "layout": "tabbed",
+      "sections": [
+        {
+          "title": "Order Info",
+          "fields": ["orderNumber", "status", "total", "subtotal", "tax", "shipping"]
+        },
+        {
+          "title": "Addresses",
+          "fields": ["shippingAddress", "billingAddress"]
+        },
+        {
+          "title": "Timeline",
+          "fields": ["orderDate", "shippedDate", "deliveredDate", "createdAt", "updatedAt"]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "name": "User",
+  "displayName": "User",
+  "description": "User management entity with authentication and profile management",
+  "attributes": {
+    "id": {
+      "type": "integer",
+      "required": true,
+      "unique": true,
+      "displayName": "ID",
+      "ui": {
+        "hidden": true
+      }
+    },
+    "username": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "length": 50,
+      "pattern": "^[a-zA-Z0-9_]+$",
+      "displayName": "Username",
+      "description": "Unique username for login",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter username"
+      }
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": true,
+      "length": 255,
+      "displayName": "Email Address",
+      "description": "User's email address",
+      "ui": {
+        "widget": "email",
+        "placeholder": "Enter email address"
+      }
+    },
+    "password": {
+      "type": "string",
+      "required": true,
+      "length": 255,
+      "displayName": "Password",
+      "description": "User's password (hashed)",
+      "ui": {
+        "widget": "password",
+        "hidden": true
+      }
+    },
+    "firstName": {
+      "type": "string",
+      "required": true,
+      "length": 100,
+      "displayName": "First Name",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter first name"
+      }
+    },
+    "lastName": {
+      "type": "string",
+      "required": true,
+      "length": 100,
+      "displayName": "Last Name",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter last name"
+      }
+    },
+    "role": {
+      "type": "string",
+      "required": true,
+      "enum": ["admin", "manager", "user"],
+      "default": "user",
+      "displayName": "Role",
+      "description": "User's system role",
+      "ui": {
+        "widget": "select"
+      }
+    },
+    "status": {
+      "type": "string",
+      "required": true,
+      "enum": ["active", "inactive", "suspended"],
+      "default": "active",
+      "displayName": "Status",
+      "description": "User's account status",
+      "ui": {
+        "widget": "select"
+      }
+    },
+    "lastLogin": {
+      "type": "datetime",
+      "displayName": "Last Login",
+      "description": "When the user last logged in",
+      "ui": {
+        "readonly": true
+      }
+    },
+    "createdAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Created At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    },
+    "updatedAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Updated At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    }
+  },
+  "methods": {
+    "activate": {
+      "action": "custom",
+      "displayName": "Activate User",
+      "description": "Activate a suspended or inactive user",
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["status != 'active'"]
+      },
+      "ui": {
+        "button": {
+          "text": "Activate",
+          "icon": "fas fa-check-circle",
+          "class": "btn-success"
+        },
+        "position": "both"
+      }
+    },
+    "suspend": {
+      "action": "custom",
+      "displayName": "Suspend User",
+      "description": "Suspend an active user",
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["status == 'active'"]
+      },
+      "ui": {
+        "button": {
+          "text": "Suspend",
+          "icon": "fas fa-ban",
+          "class": "btn-warning",
+          "confirm": true,
+          "confirmMessage": "Are you sure you want to suspend this user?"
+        },
+        "position": "both"
+      }
+    },
+    "resetPassword": {
+      "action": "custom",
+      "displayName": "Reset Password",
+      "description": "Send password reset email to user",
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Reset Password",
+          "icon": "fas fa-key",
+          "class": "btn-info",
+          "confirm": true,
+          "confirmMessage": "Send password reset email to this user?"
+        },
+        "position": "both"
+      }
+    }
+  },
+  "relationships": {
+    "profile": {
+      "type": "oneToOne",
+      "target": "UserProfile",
+      "foreignKey": "userId"
+    },
+    "orders": {
+      "type": "oneToMany",
+      "target": "Order",
+      "foreignKey": "userId"
+    }
+  },
+  "permissions": {
+    "create": ["admin"],
+    "read": ["admin", "manager", "user"],
+    "update": ["admin", "manager", "self"],
+    "delete": ["admin"]
+  },
+  "validation": {
+    "rules": [
+      {
+        "field": "email",
+        "rule": "unique",
+        "message": "Email address must be unique"
+      },
+      {
+        "field": "username",
+        "rule": "unique",
+        "message": "Username must be unique"
+      }
+    ]
+  },
+  "ui": {
+    "listView": {
+      "columns": ["id", "username", "email", "firstName", "lastName", "role", "status", "lastLogin"],
+      "sortable": ["username", "email", "firstName", "lastName", "role", "status", "createdAt"],
+      "searchable": ["username", "email", "firstName", "lastName"],
+      "filterable": ["role", "status"]
+    },
+    "formView": {
+      "layout": "two-column",
+      "sections": [
+        {
+          "title": "Basic Information",
+          "fields": ["username", "email", "firstName", "lastName"]
+        },
+        {
+          "title": "Account Settings",
+          "fields": ["role", "status"]
+        }
+      ]
+    },
+    "detailView": {
+      "layout": "tabbed",
+      "sections": [
+        {
+          "title": "Profile",
+          "fields": ["username", "email", "firstName", "lastName", "role", "status"]
+        },
+        {
+          "title": "Activity",
+          "fields": ["lastLogin", "createdAt", "updatedAt"]
+        }
+      ]
+    }
+  }
+}

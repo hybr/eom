@@ -1,0 +1,389 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Entity Definition Schema",
+  "type": "object",
+  "required": ["name", "attributes"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+      "description": "Entity name (must be a valid identifier)"
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Human-readable name for the entity"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of what this entity represents"
+    },
+    "attributes": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/attribute"
+        }
+      },
+      "minProperties": 1
+    },
+    "methods": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/method"
+        }
+      }
+    },
+    "relationships": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/relationship"
+        }
+      }
+    },
+    "permissions": {
+      "$ref": "#/definitions/permissions"
+    },
+    "validation": {
+      "$ref": "#/definitions/validation"
+    },
+    "ui": {
+      "$ref": "#/definitions/ui"
+    }
+  },
+  "definitions": {
+    "attribute": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["string", "number", "integer", "boolean", "date", "datetime", "email", "url", "text", "json"]
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "default": {
+          "description": "Default value for the attribute"
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false
+        },
+        "indexed": {
+          "type": "boolean",
+          "default": false
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum length for string types"
+        },
+        "min": {
+          "type": "number",
+          "description": "Minimum value for numeric types"
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum value for numeric types"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern for string validation"
+        },
+        "enum": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Allowed values for the attribute"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name for the attribute"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the attribute"
+        },
+        "ui": {
+          "type": "object",
+          "properties": {
+            "widget": {
+              "enum": ["text", "textarea", "select", "checkbox", "radio", "date", "datetime", "email", "url", "number", "password", "file"]
+            },
+            "hidden": {
+              "type": "boolean",
+              "default": false
+            },
+            "readonly": {
+              "type": "boolean",
+              "default": false
+            },
+            "placeholder": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "method": {
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "enum": ["create", "update", "delete", "custom"]
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name for the method"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what the method does"
+        },
+        "parameters": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z][a-zA-Z0-9_]*$": {
+              "$ref": "#/definitions/attribute"
+            }
+          }
+        },
+        "returns": {
+          "$ref": "#/definitions/attribute"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Required roles/permissions to execute this method"
+        },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "custom": {
+              "type": "string",
+              "description": "Custom validation function name"
+            }
+          }
+        },
+        "ui": {
+          "type": "object",
+          "properties": {
+            "button": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "class": {
+                  "type": "string",
+                  "default": "btn-primary"
+                },
+                "confirm": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "confirmMessage": {
+                  "type": "string"
+                }
+              }
+            },
+            "position": {
+              "enum": ["list", "detail", "both"],
+              "default": "both"
+            }
+          }
+        }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "required": ["type", "target"],
+      "properties": {
+        "type": {
+          "enum": ["oneToOne", "oneToMany", "manyToOne", "manyToMany"]
+        },
+        "target": {
+          "type": "string",
+          "description": "Target entity name"
+        },
+        "foreignKey": {
+          "type": "string",
+          "description": "Foreign key attribute name"
+        },
+        "through": {
+          "type": "string",
+          "description": "Junction table name for many-to-many relationships"
+        },
+        "cascade": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable cascade delete"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "read": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "update": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "delete": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "rule": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "custom": {
+          "type": "string",
+          "description": "Custom validation function name"
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "listView": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "sortable": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "searchable": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "filterable": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "formView": {
+          "type": "object",
+          "properties": {
+            "layout": {
+              "enum": ["single-column", "two-column", "tabbed"],
+              "default": "single-column"
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "detailView": {
+          "type": "object",
+          "properties": {
+            "layout": {
+              "enum": ["single-column", "two-column", "tabbed"],
+              "default": "single-column"
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
