@@ -1,29 +1,30 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  root: 'frontend',
+  root: './frontend',
   publicDir: 'public',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: {
-        main: 'frontend/index.html'
-      }
+      input: './frontend/index.html'
     }
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true
       },
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         ws: true,
         changeOrigin: true
       }
     }
+  },
+  optimizeDeps: {
+    include: ['bootstrap']
   }
 })

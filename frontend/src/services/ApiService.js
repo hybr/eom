@@ -3,6 +3,28 @@ export class ApiService {
     this.baseURL = '/api'
   }
 
+  // Helper method to properly pluralize entity names
+  pluralize(entityType) {
+    const name = entityType.toLowerCase()
+
+    // Handle irregular plurals
+    const irregulars = {
+      'country': 'countries'
+    }
+
+    if (irregulars[name]) {
+      return irregulars[name]
+    }
+
+    // Handle regular pluralization rules
+    if (name.endsWith('y')) {
+      return name.slice(0, -1) + 'ies'
+    }
+
+    // Default: just add 's'
+    return name + 's'
+  }
+
   async request (endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
     const token = localStorage.getItem('token')
@@ -78,27 +100,27 @@ export class ApiService {
 
   // Entity-specific methods
   async getEntities (entityType, params = {}) {
-    return this.get(`/${entityType.toLowerCase()}`, params)
+    return this.get(`/${this.pluralize(entityType)}`, params)
   }
 
   async getEntity (entityType, id) {
-    return this.get(`/${entityType.toLowerCase()}/${id}`)
+    return this.get(`/${this.pluralize(entityType)}/${id}`)
   }
 
   async createEntity (entityType, data) {
-    return this.post(`/${entityType.toLowerCase()}`, data)
+    return this.post(`/${this.pluralize(entityType)}`, data)
   }
 
   async updateEntity (entityType, id, data) {
-    return this.put(`/${entityType.toLowerCase()}/${id}`, data)
+    return this.put(`/${this.pluralize(entityType)}/${id}`, data)
   }
 
   async deleteEntity (entityType, id) {
-    return this.delete(`/${entityType.toLowerCase()}/${id}`)
+    return this.delete(`/${this.pluralize(entityType)}/${id}`)
   }
 
   async executeMethod (entityType, id, method, params = {}) {
-    return this.post(`/${entityType.toLowerCase()}/${id}/action/${method}`, params)
+    return this.post(`/${this.pluralize(entityType)}/${id}/action/${method}`, params)
   }
 
   // Authentication methods

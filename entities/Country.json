@@ -1,0 +1,535 @@
+{
+  "name": "Country",
+  "displayName": "Country",
+  "description": "Country entity for comprehensive geographical, political, and economic data management",
+  "attributes": {
+    "id": {
+      "type": "integer",
+      "required": true,
+      "unique": true,
+      "displayName": "ID",
+      "ui": {
+        "hidden": true
+      }
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "length": 100,
+      "displayName": "Country Name",
+      "description": "Official name of the country (e.g., India, Brazil)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter country name"
+      }
+    },
+    "isoCode2": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "length": 2,
+      "pattern": "^[A-Z]{2}$",
+      "displayName": "ISO Code (2-letter)",
+      "description": "ISO 3166-1 alpha-2 code (e.g., IN, US, BR)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter 2-letter ISO code"
+      }
+    },
+    "isoCode3": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "length": 3,
+      "pattern": "^[A-Z]{3}$",
+      "displayName": "ISO Code (3-letter)",
+      "description": "ISO 3166-1 alpha-3 code (e.g., IND, USA, BRA)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter 3-letter ISO code"
+      }
+    },
+    "continentId": {
+      "type": "integer",
+      "required": true,
+      "displayName": "Continent",
+      "description": "The continent this country belongs to",
+      "ui": {
+        "widget": "select",
+        "placeholder": "Select continent"
+      }
+    },
+    "capitalCity": {
+      "type": "string",
+      "required": true,
+      "length": 100,
+      "displayName": "Capital City",
+      "description": "Name of the capital city",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter capital city name"
+      }
+    },
+    "areaSqKm": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "displayName": "Area (km²)",
+      "description": "Land area in square kilometers",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter area in km²"
+      }
+    },
+    "population": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "displayName": "Population",
+      "description": "Current or last known population",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter population"
+      }
+    },
+    "currencyName": {
+      "type": "string",
+      "length": 100,
+      "displayName": "Currency Name",
+      "description": "Name of main currency (e.g., Indian Rupee, US Dollar)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter currency name"
+      }
+    },
+    "currencyCode": {
+      "type": "string",
+      "length": 3,
+      "pattern": "^[A-Z]{3}$",
+      "displayName": "Currency Code",
+      "description": "ISO 4217 currency code (e.g., INR, USD, EUR)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter 3-letter currency code"
+      }
+    },
+    "phoneCode": {
+      "type": "string",
+      "length": 10,
+      "displayName": "Phone Code",
+      "description": "International dialing code (e.g., +91, +1, +44)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter phone code (e.g., +91)"
+      }
+    },
+    "officialLanguages": {
+      "type": "text",
+      "displayName": "Official Languages",
+      "description": "List of official languages (JSON array or comma-separated)",
+      "ui": {
+        "widget": "textarea",
+        "placeholder": "Enter official languages"
+      }
+    },
+    "timezoneZones": {
+      "type": "text",
+      "displayName": "Timezone Zones",
+      "description": "Time zones applicable (JSON array or comma-separated)",
+      "ui": {
+        "widget": "textarea",
+        "placeholder": "Enter timezone zones"
+      }
+    },
+    "drivingSide": {
+      "type": "string",
+      "required": true,
+      "enum": ["left", "right"],
+      "default": "right",
+      "displayName": "Driving Side",
+      "description": "Which side of the road traffic drives on",
+      "ui": {
+        "widget": "select"
+      }
+    },
+    "independenceDate": {
+      "type": "date",
+      "displayName": "Independence Date",
+      "description": "Date of independence (if applicable)",
+      "ui": {
+        "widget": "date",
+        "placeholder": "Select independence date"
+      }
+    },
+    "governmentType": {
+      "type": "string",
+      "length": 100,
+      "displayName": "Government Type",
+      "description": "Type of government (e.g., Federal Republic, Monarchy)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter government type"
+      }
+    },
+    "gdpNominal": {
+      "type": "number",
+      "min": 0,
+      "displayName": "GDP Nominal (USD)",
+      "description": "Nominal GDP in USD (optional)",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter GDP in USD"
+      }
+    },
+    "internetDomain": {
+      "type": "string",
+      "length": 10,
+      "pattern": "^\\.[a-z]{2,}$",
+      "displayName": "Internet Domain",
+      "description": "Country top-level domain (TLD) (e.g., .in, .br, .us)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter domain (e.g., .in)"
+      }
+    },
+    "createdAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Created At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    },
+    "updatedAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Updated At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    }
+  },
+  "methods": {
+    "recalculatePopulation": {
+      "action": "custom",
+      "displayName": "Recalculate Population",
+      "description": "Update population from census or external data",
+      "parameters": {
+        "newPopulation": {
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "displayName": "New Population",
+          "ui": {
+            "widget": "number",
+            "placeholder": "Enter updated population"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Update Population",
+          "icon": "fas fa-users",
+          "class": "btn-info"
+        },
+        "position": "both"
+      }
+    },
+    "updateGDP": {
+      "action": "custom",
+      "displayName": "Update GDP",
+      "description": "Set or recalculate GDP value",
+      "parameters": {
+        "gdpValue": {
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "displayName": "GDP Value (USD)",
+          "ui": {
+            "widget": "number",
+            "placeholder": "Enter GDP in USD"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Update GDP",
+          "icon": "fas fa-chart-line",
+          "class": "btn-success"
+        },
+        "position": "both"
+      }
+    },
+    "setCapital": {
+      "action": "custom",
+      "displayName": "Change Capital",
+      "description": "Change the capital city",
+      "parameters": {
+        "cityName": {
+          "type": "string",
+          "required": true,
+          "displayName": "Capital City Name",
+          "ui": {
+            "widget": "text",
+            "placeholder": "Enter new capital city name"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Change Capital",
+          "icon": "fas fa-city",
+          "class": "btn-warning",
+          "confirm": true,
+          "confirmMessage": "Are you sure you want to change the capital city?"
+        },
+        "position": "detail"
+      }
+    },
+    "linkToContinent": {
+      "action": "custom",
+      "displayName": "Assign to Continent",
+      "description": "Assign the country to a continent",
+      "parameters": {
+        "continentId": {
+          "type": "integer",
+          "required": true,
+          "displayName": "Continent",
+          "ui": {
+            "widget": "select",
+            "placeholder": "Select continent"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Assign Continent",
+          "icon": "fas fa-globe",
+          "class": "btn-primary"
+        },
+        "position": "both"
+      }
+    },
+    "getCountryStats": {
+      "action": "custom",
+      "displayName": "Get Statistics",
+      "description": "Get comprehensive country statistics including population density, GDP per capita, etc.",
+      "permissions": ["admin", "manager", "user"],
+      "ui": {
+        "button": {
+          "text": "View Statistics",
+          "icon": "fas fa-chart-bar",
+          "class": "btn-info"
+        },
+        "position": "both"
+      }
+    },
+    "calculatePopulationDensity": {
+      "action": "custom",
+      "displayName": "Calculate Density",
+      "description": "Auto-calculate population density from population and area",
+      "permissions": ["admin", "manager", "user"],
+      "ui": {
+        "button": {
+          "text": "Calculate Density",
+          "icon": "fas fa-calculator",
+          "class": "btn-secondary"
+        },
+        "position": "detail"
+      }
+    },
+    "activate": {
+      "action": "custom",
+      "displayName": "Activate Country",
+      "description": "Mark country as active in the system",
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Activate",
+          "icon": "fas fa-check-circle",
+          "class": "btn-success"
+        },
+        "position": "both"
+      }
+    },
+    "deactivate": {
+      "action": "custom",
+      "displayName": "Deactivate Country",
+      "description": "Mark country as inactive in the system",
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Deactivate",
+          "icon": "fas fa-times-circle",
+          "class": "btn-danger",
+          "confirm": true,
+          "confirmMessage": "Are you sure you want to deactivate this country?"
+        },
+        "position": "both"
+      }
+    },
+    "addLanguage": {
+      "action": "custom",
+      "displayName": "Add Language",
+      "description": "Add to official languages list",
+      "parameters": {
+        "language": {
+          "type": "string",
+          "required": true,
+          "displayName": "Language Name",
+          "ui": {
+            "widget": "text",
+            "placeholder": "Enter language name"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Add Language",
+          "icon": "fas fa-language",
+          "class": "btn-success"
+        },
+        "position": "detail"
+      }
+    },
+    "removeLanguage": {
+      "action": "custom",
+      "displayName": "Remove Language",
+      "description": "Remove from official languages list",
+      "parameters": {
+        "language": {
+          "type": "string",
+          "required": true,
+          "displayName": "Language Name",
+          "ui": {
+            "widget": "text",
+            "placeholder": "Enter language name to remove"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Remove Language",
+          "icon": "fas fa-minus-circle",
+          "class": "btn-warning",
+          "confirm": true,
+          "confirmMessage": "Remove this language from official languages?"
+        },
+        "position": "detail"
+      }
+    }
+  },
+  "relationships": {
+    "continent": {
+      "type": "manyToOne",
+      "target": "Continent",
+      "foreignKey": "continentId",
+      "displayName": "Continent"
+    }
+  },
+  "permissions": {
+    "create": ["admin", "manager"],
+    "read": ["admin", "manager", "user"],
+    "update": ["admin", "manager"],
+    "delete": ["admin"]
+  },
+  "validation": {
+    "rules": [
+      {
+        "field": "name",
+        "rule": "unique_per_continent",
+        "message": "Country name must be unique within the continent"
+      },
+      {
+        "field": "isoCode2",
+        "rule": "unique",
+        "message": "ISO 2-letter code must be unique"
+      },
+      {
+        "field": "isoCode3",
+        "rule": "unique",
+        "message": "ISO 3-letter code must be unique"
+      },
+      {
+        "field": "areaSqKm",
+        "rule": "positive",
+        "message": "Area must be a positive number"
+      },
+      {
+        "field": "population",
+        "rule": "positive",
+        "message": "Population must be a positive number"
+      }
+    ]
+  },
+  "ui": {
+    "listView": {
+      "columns": ["name", "isoCode2", "continent", "capitalCity", "population", "areaSqKm", "currencyCode"],
+      "sortable": ["name", "isoCode2", "capitalCity", "population", "areaSqKm", "createdAt"],
+      "searchable": ["name", "isoCode2", "isoCode3", "capitalCity"],
+      "filterable": ["continent", "drivingSide", "currencyCode"]
+    },
+    "formView": {
+      "layout": "two-column",
+      "sections": [
+        {
+          "title": "Basic Information",
+          "fields": ["name", "isoCode2", "isoCode3", "continentId"]
+        },
+        {
+          "title": "Geography & Demographics",
+          "fields": ["capitalCity", "areaSqKm", "population"]
+        },
+        {
+          "title": "Economic Information",
+          "fields": ["currencyName", "currencyCode", "gdpNominal"]
+        },
+        {
+          "title": "Cultural & Technical",
+          "fields": ["officialLanguages", "drivingSide", "phoneCode", "internetDomain"]
+        },
+        {
+          "title": "Government & History",
+          "fields": ["governmentType", "independenceDate"]
+        },
+        {
+          "title": "Time & Location",
+          "fields": ["timezoneZones"]
+        }
+      ]
+    },
+    "detailView": {
+      "layout": "tabbed",
+      "sections": [
+        {
+          "title": "Overview",
+          "fields": ["name", "isoCode2", "isoCode3", "continent", "capitalCity", "population", "areaSqKm"]
+        },
+        {
+          "title": "Economic",
+          "fields": ["currencyName", "currencyCode", "gdpNominal"]
+        },
+        {
+          "title": "Cultural & Social",
+          "fields": ["officialLanguages", "drivingSide", "phoneCode", "internetDomain", "timezoneZones"]
+        },
+        {
+          "title": "Government & History",
+          "fields": ["governmentType", "independenceDate"]
+        },
+        {
+          "title": "Metadata",
+          "fields": ["createdAt", "updatedAt"]
+        }
+      ]
+    }
+  }
+}

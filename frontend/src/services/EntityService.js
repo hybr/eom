@@ -81,6 +81,130 @@ export class EntityService {
               searchable: ['orderNumber']
             }
           }
+        },
+        Continent: {
+          name: 'Continent',
+          displayName: 'Continent',
+          attributes: {
+            id: { type: 'integer', displayName: 'ID', ui: { hidden: true } },
+            name: { type: 'string', displayName: 'Continent Name' },
+            code: { type: 'string', displayName: 'Code' },
+            areaSqKm: { type: 'number', displayName: 'Area (km²)' },
+            population: { type: 'number', displayName: 'Population' },
+            numberOfCountries: { type: 'integer', displayName: 'Countries', ui: { readonly: true } },
+            largestCountry: { type: 'string', displayName: 'Largest Country' },
+            smallestCountry: { type: 'string', displayName: 'Smallest Country' },
+            highestPoint: { type: 'string', displayName: 'Highest Point' },
+            highestPointElevation: { type: 'number', displayName: 'Highest Elevation (m)' },
+            lowestPoint: { type: 'string', displayName: 'Lowest Point' },
+            lowestPointElevation: { type: 'number', displayName: 'Lowest Elevation (m)' },
+            timezoneZones: { type: 'text', displayName: 'Timezone Zones' },
+            languagesMajor: { type: 'text', displayName: 'Major Languages' },
+            createdAt: { type: 'datetime', displayName: 'Created At', ui: { readonly: true, hidden: true } },
+            updatedAt: { type: 'datetime', displayName: 'Updated At', ui: { readonly: true, hidden: true } }
+          },
+          methods: {
+            recalculatePopulation: {
+              displayName: 'Recalculate Population',
+              ui: { button: { text: 'Recalculate', class: 'btn-info', icon: 'fas fa-calculator' } }
+            },
+            addCountry: {
+              displayName: 'Add Country',
+              ui: { button: { text: 'Add Country', class: 'btn-success', icon: 'fas fa-plus-circle' } }
+            },
+            removeCountry: {
+              displayName: 'Remove Country',
+              ui: { button: { text: 'Remove Country', class: 'btn-danger', icon: 'fas fa-minus-circle', confirm: true } }
+            },
+            getStatistics: {
+              displayName: 'View Statistics',
+              ui: { button: { text: 'Statistics', class: 'btn-primary', icon: 'fas fa-chart-bar' } }
+            },
+            updateGeography: {
+              displayName: 'Update Geography',
+              ui: { button: { text: 'Update Geography', class: 'btn-warning', icon: 'fas fa-mountain' } }
+            }
+          },
+          ui: {
+            listView: {
+              columns: ['id', 'name', 'code', 'areaSqKm', 'population', 'numberOfCountries'],
+              searchable: ['name', 'code']
+            }
+          }
+        },
+        Country: {
+          name: 'Country',
+          displayName: 'Country',
+          attributes: {
+            id: { type: 'integer', displayName: 'ID', ui: { hidden: true } },
+            name: { type: 'string', displayName: 'Country Name' },
+            isoCode2: { type: 'string', displayName: 'ISO Code (2)' },
+            isoCode3: { type: 'string', displayName: 'ISO Code (3)' },
+            continentId: { type: 'integer', displayName: 'Continent' },
+            capitalCity: { type: 'string', displayName: 'Capital City' },
+            areaSqKm: { type: 'number', displayName: 'Area (km²)' },
+            population: { type: 'number', displayName: 'Population' },
+            currencyName: { type: 'string', displayName: 'Currency Name' },
+            currencyCode: { type: 'string', displayName: 'Currency Code' },
+            phoneCode: { type: 'string', displayName: 'Phone Code' },
+            officialLanguages: { type: 'text', displayName: 'Official Languages' },
+            timezoneZones: { type: 'text', displayName: 'Timezone Zones' },
+            drivingSide: { type: 'string', displayName: 'Driving Side', enum: ['left', 'right'] },
+            independenceDate: { type: 'date', displayName: 'Independence Date' },
+            governmentType: { type: 'string', displayName: 'Government Type' },
+            gdpNominal: { type: 'number', displayName: 'GDP Nominal (USD)' },
+            internetDomain: { type: 'string', displayName: 'Internet Domain' },
+            createdAt: { type: 'datetime', displayName: 'Created At', ui: { readonly: true, hidden: true } },
+            updatedAt: { type: 'datetime', displayName: 'Updated At', ui: { readonly: true, hidden: true } }
+          },
+          methods: {
+            recalculatePopulation: {
+              displayName: 'Update Population',
+              ui: { button: { text: 'Update Population', class: 'btn-info', icon: 'fas fa-users' } }
+            },
+            updateGDP: {
+              displayName: 'Update GDP',
+              ui: { button: { text: 'Update GDP', class: 'btn-success', icon: 'fas fa-chart-line' } }
+            },
+            setCapital: {
+              displayName: 'Change Capital',
+              ui: { button: { text: 'Change Capital', class: 'btn-warning', icon: 'fas fa-city', confirm: true } }
+            },
+            linkToContinent: {
+              displayName: 'Assign to Continent',
+              ui: { button: { text: 'Assign Continent', class: 'btn-primary', icon: 'fas fa-globe' } }
+            },
+            getCountryStats: {
+              displayName: 'View Statistics',
+              ui: { button: { text: 'Statistics', class: 'btn-info', icon: 'fas fa-chart-bar' } }
+            },
+            calculatePopulationDensity: {
+              displayName: 'Calculate Density',
+              ui: { button: { text: 'Calculate Density', class: 'btn-secondary', icon: 'fas fa-calculator' } }
+            },
+            activate: {
+              displayName: 'Activate Country',
+              ui: { button: { text: 'Activate', class: 'btn-success', icon: 'fas fa-check-circle' } }
+            },
+            deactivate: {
+              displayName: 'Deactivate Country',
+              ui: { button: { text: 'Deactivate', class: 'btn-danger', icon: 'fas fa-times-circle', confirm: true } }
+            },
+            addLanguage: {
+              displayName: 'Add Language',
+              ui: { button: { text: 'Add Language', class: 'btn-success', icon: 'fas fa-language' } }
+            },
+            removeLanguage: {
+              displayName: 'Remove Language',
+              ui: { button: { text: 'Remove Language', class: 'btn-warning', icon: 'fas fa-minus-circle', confirm: true } }
+            }
+          },
+          ui: {
+            listView: {
+              columns: ['id', 'name', 'isoCode2', 'capitalCity', 'population', 'areaSqKm', 'currencyCode'],
+              searchable: ['name', 'isoCode2', 'isoCode3', 'capitalCity']
+            }
+          }
         }
       }
 

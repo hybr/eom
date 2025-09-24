@@ -67,6 +67,7 @@ npm run dev
 npm run dev:backend  # Backend on port 3000
 npm run dev:frontend # Frontend on port 5173
 ```
+netstat -ano | findstr :3000
 
 ## 📝 Entity Configuration
 

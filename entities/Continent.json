@@ -1,0 +1,381 @@
+{
+  "name": "Continent",
+  "displayName": "Continent",
+  "description": "Continent entity for geographical data management with comprehensive attributes and statistical information",
+  "attributes": {
+    "id": {
+      "type": "integer",
+      "required": true,
+      "unique": true,
+      "displayName": "ID",
+      "ui": {
+        "hidden": true
+      }
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "length": 100,
+      "displayName": "Continent Name",
+      "description": "Name of the continent (e.g., Asia, Europe, North America)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter continent name"
+      }
+    },
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "length": 3,
+      "pattern": "^[A-Z]{2,3}$",
+      "displayName": "Continent Code",
+      "description": "Short code for the continent (e.g., AF, EU, NA)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter 2-3 letter code"
+      }
+    },
+    "areaSqKm": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "displayName": "Area (km²)",
+      "description": "Land area in square kilometers",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter area in km²"
+      }
+    },
+    "population": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "displayName": "Population",
+      "description": "Approximate population (latest known)",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter population"
+      }
+    },
+    "numberOfCountries": {
+      "type": "integer",
+      "required": true,
+      "min": 0,
+      "displayName": "Number of Countries",
+      "description": "Total number of countries in the continent",
+      "ui": {
+        "widget": "number",
+        "readonly": true
+      }
+    },
+    "largestCountry": {
+      "type": "string",
+      "length": 100,
+      "displayName": "Largest Country",
+      "description": "Name of the largest country by area",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter largest country name"
+      }
+    },
+    "smallestCountry": {
+      "type": "string",
+      "length": 100,
+      "displayName": "Smallest Country",
+      "description": "Name of the smallest country by area",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter smallest country name"
+      }
+    },
+    "highestPoint": {
+      "type": "string",
+      "length": 100,
+      "displayName": "Highest Point",
+      "description": "Name of highest peak (e.g., Mount Everest for Asia)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter highest point name"
+      }
+    },
+    "highestPointElevation": {
+      "type": "number",
+      "displayName": "Highest Point Elevation (m)",
+      "description": "Elevation of highest point in meters",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter elevation in meters"
+      }
+    },
+    "lowestPoint": {
+      "type": "string",
+      "length": 100,
+      "displayName": "Lowest Point",
+      "description": "Name of lowest point (e.g., Dead Sea Depression)",
+      "ui": {
+        "widget": "text",
+        "placeholder": "Enter lowest point name"
+      }
+    },
+    "lowestPointElevation": {
+      "type": "number",
+      "displayName": "Lowest Point Elevation (m)",
+      "description": "Elevation of lowest point in meters (often negative)",
+      "ui": {
+        "widget": "number",
+        "placeholder": "Enter elevation in meters"
+      }
+    },
+    "timezoneZones": {
+      "type": "text",
+      "displayName": "Timezone Zones",
+      "description": "Time zones present in the continent (JSON array or comma-separated)",
+      "ui": {
+        "widget": "textarea",
+        "placeholder": "Enter timezone zones"
+      }
+    },
+    "languagesMajor": {
+      "type": "text",
+      "displayName": "Major Languages",
+      "description": "Major languages spoken (JSON array or comma-separated)",
+      "ui": {
+        "widget": "textarea",
+        "placeholder": "Enter major languages"
+      }
+    },
+    "createdAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Created At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    },
+    "updatedAt": {
+      "type": "datetime",
+      "required": true,
+      "displayName": "Updated At",
+      "ui": {
+        "readonly": true,
+        "hidden": true
+      }
+    }
+  },
+  "methods": {
+    "recalculatePopulation": {
+      "action": "custom",
+      "displayName": "Recalculate Population",
+      "description": "Recalculate total population from all related countries",
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Recalculate Population",
+          "icon": "fas fa-calculator",
+          "class": "btn-info"
+        },
+        "position": "detail"
+      }
+    },
+    "addCountry": {
+      "action": "custom",
+      "displayName": "Add Country",
+      "description": "Associate a country to this continent",
+      "parameters": {
+        "countryId": {
+          "type": "integer",
+          "required": true,
+          "displayName": "Country ID",
+          "ui": {
+            "widget": "select",
+            "placeholder": "Select a country"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Add Country",
+          "icon": "fas fa-plus-circle",
+          "class": "btn-success"
+        },
+        "position": "both"
+      }
+    },
+    "removeCountry": {
+      "action": "custom",
+      "displayName": "Remove Country",
+      "description": "Remove a country from this continent",
+      "parameters": {
+        "countryId": {
+          "type": "integer",
+          "required": true,
+          "displayName": "Country ID",
+          "ui": {
+            "widget": "select",
+            "placeholder": "Select a country to remove"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "validation": {
+        "rules": ["numberOfCountries > 0"]
+      },
+      "ui": {
+        "button": {
+          "text": "Remove Country",
+          "icon": "fas fa-minus-circle",
+          "class": "btn-danger",
+          "confirm": true,
+          "confirmMessage": "Are you sure you want to remove this country from the continent?"
+        },
+        "position": "both"
+      }
+    },
+    "getStatistics": {
+      "action": "custom",
+      "displayName": "Get Statistics",
+      "description": "Get comprehensive statistics including population density, average country size, etc.",
+      "permissions": ["admin", "manager", "user"],
+      "ui": {
+        "button": {
+          "text": "View Statistics",
+          "icon": "fas fa-chart-bar",
+          "class": "btn-primary"
+        },
+        "position": "both"
+      }
+    },
+    "updateGeography": {
+      "action": "custom",
+      "displayName": "Update Geography",
+      "description": "Update geographical information including highest/lowest points",
+      "parameters": {
+        "highestPoint": {
+          "type": "string",
+          "displayName": "Highest Point",
+          "ui": {
+            "widget": "text"
+          }
+        },
+        "highestPointElevation": {
+          "type": "number",
+          "displayName": "Highest Point Elevation (m)",
+          "ui": {
+            "widget": "number"
+          }
+        },
+        "lowestPoint": {
+          "type": "string",
+          "displayName": "Lowest Point",
+          "ui": {
+            "widget": "text"
+          }
+        },
+        "lowestPointElevation": {
+          "type": "number",
+          "displayName": "Lowest Point Elevation (m)",
+          "ui": {
+            "widget": "number"
+          }
+        }
+      },
+      "permissions": ["admin", "manager"],
+      "ui": {
+        "button": {
+          "text": "Update Geography",
+          "icon": "fas fa-mountain",
+          "class": "btn-warning"
+        },
+        "position": "detail"
+      }
+    }
+  },
+  "relationships": {
+    "countries": {
+      "type": "oneToMany",
+      "target": "Country",
+      "foreignKey": "continentId",
+      "displayName": "Countries"
+    }
+  },
+  "permissions": {
+    "create": ["admin"],
+    "read": ["admin", "manager", "user"],
+    "update": ["admin", "manager"],
+    "delete": ["admin"]
+  },
+  "validation": {
+    "rules": [
+      {
+        "field": "name",
+        "rule": "unique",
+        "message": "Continent name must be unique"
+      },
+      {
+        "field": "code",
+        "rule": "unique",
+        "message": "Continent code must be unique"
+      },
+      {
+        "field": "areaSqKm",
+        "rule": "positive",
+        "message": "Area must be a positive number"
+      },
+      {
+        "field": "population",
+        "rule": "positive",
+        "message": "Population must be a positive number"
+      }
+    ]
+  },
+  "ui": {
+    "listView": {
+      "columns": ["name", "code", "areaSqKm", "population", "numberOfCountries", "createdAt"],
+      "sortable": ["name", "code", "areaSqKm", "population", "numberOfCountries", "createdAt"],
+      "searchable": ["name", "code"],
+      "filterable": []
+    },
+    "formView": {
+      "layout": "two-column",
+      "sections": [
+        {
+          "title": "Basic Information",
+          "fields": ["name", "code", "areaSqKm", "population"]
+        },
+        {
+          "title": "Geography",
+          "fields": ["highestPoint", "highestPointElevation", "lowestPoint", "lowestPointElevation"]
+        },
+        {
+          "title": "Additional Details",
+          "fields": ["timezoneZones", "languagesMajor"]
+        }
+      ]
+    },
+    "detailView": {
+      "layout": "tabbed",
+      "sections": [
+        {
+          "title": "Overview",
+          "fields": ["name", "code", "areaSqKm", "population", "numberOfCountries"]
+        },
+        {
+          "title": "Geography",
+          "fields": ["largestCountry", "smallestCountry", "highestPoint", "highestPointElevation", "lowestPoint", "lowestPointElevation"]
+        },
+        {
+          "title": "Cultural",
+          "fields": ["timezoneZones", "languagesMajor"]
+        },
+        {
+          "title": "Metadata",
+          "fields": ["createdAt", "updatedAt"]
+        }
+      ]
+    }
+  }
+}
