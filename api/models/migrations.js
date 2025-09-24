@@ -626,6 +626,305 @@ export async function migration_006_add_common_legal_types() {
     console.log(`Migration ${migrationName} completed successfully - Added ${processed} legal types`)
 }
 
+// Migration 007: Create industry_name table
+export async function migration_007_create_industry_name_table() {
+    const migrationName = '007_create_industry_name_table'
+
+    if (await migrationExists(migrationName)) {
+        console.log(`Migration ${migrationName} already executed, skipping...`)
+        return
+    }
+
+    console.log(`Executing migration: ${migrationName}`)
+
+    // Create industry_name table
+    await dbRun(`
+        CREATE TABLE IF NOT EXISTS industry_name (
+            id TEXT PRIMARY KEY,
+            code TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT,
+            description TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+
+    // Create indexes
+    const indexes = [
+        'CREATE INDEX IF NOT EXISTS idx_industry_code ON industry_name(code)',
+        'CREATE INDEX IF NOT EXISTS idx_industry_name ON industry_name(name)',
+        'CREATE INDEX IF NOT EXISTS idx_industry_category ON industry_name(category)',
+        'CREATE INDEX IF NOT EXISTS idx_industry_active ON industry_name(is_active)'
+    ]
+
+    for (const indexSql of indexes) {
+        await dbRun(indexSql)
+    }
+
+    await recordMigration(migrationName)
+    console.log(`Migration ${migrationName} completed successfully`)
+}
+
+// Migration 008: Add common industries
+export async function migration_008_add_common_industries() {
+    const migrationName = '008_add_common_industries'
+
+    if (await migrationExists(migrationName)) {
+        console.log(`Migration ${migrationName} already executed, skipping...`)
+        return
+    }
+
+    console.log(`Executing migration: ${migrationName}`)
+
+    const commonIndustries = [
+        // Technology
+        { code: 'TECH_SOFTWARE', name: 'Software Development', category: 'Technology', description: 'Development of software applications and systems' },
+        { code: 'TECH_HARDWARE', name: 'Computer Hardware', category: 'Technology', description: 'Manufacturing and distribution of computer hardware' },
+        { code: 'TECH_SAAS', name: 'Software as a Service', category: 'Technology', description: 'Cloud-based software solutions' },
+        { code: 'TECH_AI_ML', name: 'Artificial Intelligence & Machine Learning', category: 'Technology', description: 'AI and ML solutions and services' },
+        { code: 'TECH_CYBERSECURITY', name: 'Cybersecurity', category: 'Technology', description: 'Information security and cybersecurity solutions' },
+        { code: 'TECH_TELECOM', name: 'Telecommunications', category: 'Technology', description: 'Communication infrastructure and services' },
+
+        // Finance
+        { code: 'FIN_BANKING', name: 'Banking', category: 'Finance', description: 'Traditional banking and financial services' },
+        { code: 'FIN_INVESTMENT', name: 'Investment Management', category: 'Finance', description: 'Investment and asset management services' },
+        { code: 'FIN_INSURANCE', name: 'Insurance', category: 'Finance', description: 'Insurance products and services' },
+        { code: 'FIN_FINTECH', name: 'Financial Technology', category: 'Finance', description: 'Technology-driven financial services' },
+        { code: 'FIN_ACCOUNTING', name: 'Accounting & Auditing', category: 'Finance', description: 'Professional accounting and auditing services' },
+        { code: 'FIN_CRYPTO', name: 'Cryptocurrency & Blockchain', category: 'Finance', description: 'Digital currency and blockchain technology' },
+
+        // Healthcare
+        { code: 'HC_HOSPITALS', name: 'Hospitals & Medical Centers', category: 'Healthcare', description: 'Hospital and medical facility operations' },
+        { code: 'HC_PHARMA', name: 'Pharmaceuticals', category: 'Healthcare', description: 'Drug development and pharmaceutical manufacturing' },
+        { code: 'HC_BIOTECH', name: 'Biotechnology', category: 'Healthcare', description: 'Biotechnology research and development' },
+        { code: 'HC_MEDICAL_DEVICES', name: 'Medical Devices', category: 'Healthcare', description: 'Medical equipment and device manufacturing' },
+        { code: 'HC_HEALTHTECH', name: 'Health Technology', category: 'Healthcare', description: 'Technology solutions for healthcare' },
+        { code: 'HC_WELLNESS', name: 'Health & Wellness', category: 'Healthcare', description: 'Wellness and preventive health services' },
+
+        // Manufacturing
+        { code: 'MFG_AUTOMOTIVE', name: 'Automotive Manufacturing', category: 'Manufacturing', description: 'Vehicle and automotive parts manufacturing' },
+        { code: 'MFG_AEROSPACE', name: 'Aerospace & Defense', category: 'Manufacturing', description: 'Aircraft and defense equipment manufacturing' },
+        { code: 'MFG_ELECTRONICS', name: 'Electronics Manufacturing', category: 'Manufacturing', description: 'Electronic components and devices manufacturing' },
+        { code: 'MFG_MACHINERY', name: 'Machinery & Equipment', category: 'Manufacturing', description: 'Industrial machinery manufacturing' },
+        { code: 'MFG_TEXTILES', name: 'Textiles & Apparel', category: 'Manufacturing', description: 'Textile and clothing manufacturing' },
+        { code: 'MFG_FOOD_BEVERAGE', name: 'Food & Beverage', category: 'Manufacturing', description: 'Food processing and beverage production' },
+
+        // Retail & E-commerce
+        { code: 'RETAIL_ECOMMERCE', name: 'E-commerce', category: 'Retail', description: 'Online retail and marketplace platforms' },
+        { code: 'RETAIL_FASHION', name: 'Fashion & Apparel', category: 'Retail', description: 'Fashion retail and clothing stores' },
+        { code: 'RETAIL_GROCERY', name: 'Grocery & Supermarkets', category: 'Retail', description: 'Grocery stores and supermarket chains' },
+        { code: 'RETAIL_ELECTRONICS', name: 'Electronics Retail', category: 'Retail', description: 'Consumer electronics retail' },
+        { code: 'RETAIL_AUTOMOTIVE', name: 'Automotive Retail', category: 'Retail', description: 'Car dealerships and automotive retail' },
+
+        // Education
+        { code: 'EDU_HIGHER', name: 'Higher Education', category: 'Education', description: 'Universities and colleges' },
+        { code: 'EDU_K12', name: 'K-12 Education', category: 'Education', description: 'Primary and secondary schools' },
+        { code: 'EDU_ONLINE', name: 'Online Education', category: 'Education', description: 'Online learning platforms and courses' },
+        { code: 'EDU_TRAINING', name: 'Professional Training', category: 'Education', description: 'Professional development and training services' },
+        { code: 'EDU_RESEARCH', name: 'Research Institutions', category: 'Education', description: 'Academic and scientific research organizations' },
+
+        // Real Estate
+        { code: 'RE_DEVELOPMENT', name: 'Real Estate Development', category: 'Real Estate', description: 'Property development and construction' },
+        { code: 'RE_INVESTMENT', name: 'Real Estate Investment', category: 'Real Estate', description: 'Property investment and management' },
+        { code: 'RE_COMMERCIAL', name: 'Commercial Real Estate', category: 'Real Estate', description: 'Commercial property services' },
+        { code: 'RE_RESIDENTIAL', name: 'Residential Real Estate', category: 'Real Estate', description: 'Residential property services' },
+        { code: 'RE_PROPTECH', name: 'Property Technology', category: 'Real Estate', description: 'Technology solutions for real estate' },
+
+        // Energy & Utilities
+        { code: 'ENERGY_OIL_GAS', name: 'Oil & Gas', category: 'Energy', description: 'Petroleum and natural gas industry' },
+        { code: 'ENERGY_RENEWABLE', name: 'Renewable Energy', category: 'Energy', description: 'Solar, wind, and other renewable energy sources' },
+        { code: 'ENERGY_UTILITIES', name: 'Utilities', category: 'Energy', description: 'Electric, water, and gas utilities' },
+        { code: 'ENERGY_NUCLEAR', name: 'Nuclear Energy', category: 'Energy', description: 'Nuclear power generation' },
+
+        // Transportation & Logistics
+        { code: 'TRANS_SHIPPING', name: 'Shipping & Maritime', category: 'Transportation', description: 'Ocean freight and maritime services' },
+        { code: 'TRANS_AVIATION', name: 'Aviation', category: 'Transportation', description: 'Airlines and aviation services' },
+        { code: 'TRANS_LOGISTICS', name: 'Logistics & Supply Chain', category: 'Transportation', description: 'Freight forwarding and logistics services' },
+        { code: 'TRANS_TRUCKING', name: 'Trucking & Ground Transport', category: 'Transportation', description: 'Ground transportation services' },
+        { code: 'TRANS_RIDE_SHARING', name: 'Ride Sharing & Mobility', category: 'Transportation', description: 'Ride sharing and mobility services' },
+
+        // Media & Entertainment
+        { code: 'MEDIA_PUBLISHING', name: 'Publishing', category: 'Media', description: 'Book, magazine, and digital publishing' },
+        { code: 'MEDIA_BROADCAST', name: 'Broadcasting', category: 'Media', description: 'Television and radio broadcasting' },
+        { code: 'MEDIA_STREAMING', name: 'Streaming & Digital Media', category: 'Media', description: 'Online streaming and digital content platforms' },
+        { code: 'MEDIA_GAMING', name: 'Gaming & Interactive Entertainment', category: 'Media', description: 'Video games and interactive entertainment' },
+        { code: 'MEDIA_ADVERTISING', name: 'Advertising & Marketing', category: 'Media', description: 'Advertising agencies and marketing services' },
+
+        // Professional Services
+        { code: 'PROF_CONSULTING', name: 'Management Consulting', category: 'Professional Services', description: 'Business strategy and management consulting' },
+        { code: 'PROF_LEGAL', name: 'Legal Services', category: 'Professional Services', description: 'Law firms and legal services' },
+        { code: 'PROF_ARCHITECTURE', name: 'Architecture & Engineering', category: 'Professional Services', description: 'Architectural and engineering services' },
+        { code: 'PROF_HR', name: 'Human Resources', category: 'Professional Services', description: 'HR consulting and staffing services' },
+        { code: 'PROF_MARKETING', name: 'Marketing & PR', category: 'Professional Services', description: 'Marketing and public relations agencies' },
+
+        // Government & Non-Profit
+        { code: 'GOV_FEDERAL', name: 'Federal Government', category: 'Government', description: 'Federal government agencies and departments' },
+        { code: 'GOV_STATE', name: 'State Government', category: 'Government', description: 'State government agencies' },
+        { code: 'GOV_LOCAL', name: 'Local Government', category: 'Government', description: 'Municipal and local government' },
+        { code: 'NPO_CHARITY', name: 'Charitable Organizations', category: 'Non-Profit', description: 'Charitable and philanthropic organizations' },
+        { code: 'NPO_FOUNDATION', name: 'Foundations', category: 'Non-Profit', description: 'Private and public foundations' },
+        { code: 'NPO_ADVOCACY', name: 'Advocacy Organizations', category: 'Non-Profit', description: 'Policy advocacy and lobbying organizations' },
+
+        // Hospitality & Tourism
+        { code: 'HOSP_HOTELS', name: 'Hotels & Lodging', category: 'Hospitality', description: 'Hotel chains and accommodation services' },
+        { code: 'HOSP_RESTAURANTS', name: 'Restaurants & Food Service', category: 'Hospitality', description: 'Restaurant chains and food service' },
+        { code: 'HOSP_TRAVEL', name: 'Travel & Tourism', category: 'Hospitality', description: 'Travel agencies and tourism services' },
+        { code: 'HOSP_EVENTS', name: 'Events & Entertainment', category: 'Hospitality', description: 'Event planning and entertainment venues' },
+
+        // Agriculture & Food
+        { code: 'AGR_FARMING', name: 'Crop Production', category: 'Agriculture', description: 'Agricultural crop farming and production' },
+        { code: 'AGR_LIVESTOCK', name: 'Livestock & Animal Husbandry', category: 'Agriculture', description: 'Livestock farming and animal products' },
+        { code: 'AGR_FORESTRY', name: 'Forestry & Logging', category: 'Agriculture', description: 'Forest management and timber production' },
+        { code: 'AGR_FISHERIES', name: 'Fisheries & Aquaculture', category: 'Agriculture', description: 'Fishing and fish farming operations' }
+    ]
+
+    let processed = 0
+
+    for (const industry of commonIndustries) {
+        // Check if industry already exists
+        const existing = await dbGet('SELECT id FROM industry_name WHERE code = ?', [industry.code])
+
+        if (!existing) {
+            const id = `IND_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+            await dbRun(`
+                INSERT INTO industry_name (id, code, name, category, description)
+                VALUES (?, ?, ?, ?, ?)
+            `, [
+                id, industry.code, industry.name, industry.category, industry.description
+            ])
+            processed++
+        }
+    }
+
+    await recordMigration(migrationName)
+    console.log(`Migration ${migrationName} completed successfully - Added ${processed} industries`)
+}
+
+// Migration 009: Update organizations table with comprehensive schema
+export async function migration_009_update_organizations_table() {
+    const migrationName = '009_update_organizations_table'
+
+    if (await migrationExists(migrationName)) {
+        console.log(`Migration ${migrationName} already executed, skipping...`)
+        return
+    }
+
+    console.log(`Executing migration: ${migrationName}`)
+
+    // Check existing table structure
+    const tableInfo = await new Promise((resolve, reject) => {
+        db.all("PRAGMA table_info(organizations)", (err, rows) => {
+            if (err) reject(err)
+            else resolve(rows)
+        })
+    })
+
+    const existingColumns = tableInfo.map(col => col.name)
+
+    // Define all new columns to add
+    const newColumns = [
+        // Core Identity
+        { name: 'legal_name', sql: 'ALTER TABLE organizations ADD COLUMN legal_name TEXT NOT NULL DEFAULT ""' },
+        { name: 'tag_line', sql: 'ALTER TABLE organizations ADD COLUMN tag_line TEXT' },
+        { name: 'mission_statement', sql: 'ALTER TABLE organizations ADD COLUMN mission_statement TEXT' },
+        { name: 'brand_assets_url', sql: 'ALTER TABLE organizations ADD COLUMN brand_assets_url TEXT' },
+        { name: 'sector', sql: 'ALTER TABLE organizations ADD COLUMN sector TEXT' },
+        { name: 'organization_type', sql: 'ALTER TABLE organizations ADD COLUMN organization_type TEXT DEFAULT "private"' },
+
+        // Ownership & Management
+        { name: 'owner_id', sql: 'ALTER TABLE organizations ADD COLUMN owner_id TEXT' },
+        { name: 'parent_org_id', sql: 'ALTER TABLE organizations ADD COLUMN parent_org_id TEXT' },
+        { name: 'registration_number', sql: 'ALTER TABLE organizations ADD COLUMN registration_number TEXT' },
+        { name: 'incorporation_number', sql: 'ALTER TABLE organizations ADD COLUMN incorporation_number TEXT' },
+        { name: 'gst_number', sql: 'ALTER TABLE organizations ADD COLUMN gst_number TEXT' },
+        { name: 'pan_number', sql: 'ALTER TABLE organizations ADD COLUMN pan_number TEXT' },
+
+        // Digital Presence
+        { name: 'sub_domain_to_v4l_app', sql: 'ALTER TABLE organizations ADD COLUMN sub_domain_to_v4l_app TEXT UNIQUE' },
+        { name: 'website', sql: 'ALTER TABLE organizations ADD COLUMN website TEXT' },
+        { name: 'social_links', sql: 'ALTER TABLE organizations ADD COLUMN social_links TEXT' },
+        { name: 'support_email_address', sql: 'ALTER TABLE organizations ADD COLUMN support_email_address TEXT' },
+
+        // Contact Info
+        { name: 'primary_phone_number', sql: 'ALTER TABLE organizations ADD COLUMN primary_phone_number TEXT' },
+        { name: 'primary_email_address', sql: 'ALTER TABLE organizations ADD COLUMN primary_email_address TEXT' },
+        { name: 'fax_number', sql: 'ALTER TABLE organizations ADD COLUMN fax_number TEXT' },
+        { name: 'address_line1', sql: 'ALTER TABLE organizations ADD COLUMN address_line1 TEXT' },
+        { name: 'address_line2', sql: 'ALTER TABLE organizations ADD COLUMN address_line2 TEXT' },
+        { name: 'city', sql: 'ALTER TABLE organizations ADD COLUMN city TEXT' },
+        { name: 'state', sql: 'ALTER TABLE organizations ADD COLUMN state TEXT' },
+        { name: 'postal_code', sql: 'ALTER TABLE organizations ADD COLUMN postal_code TEXT' },
+        { name: 'country', sql: 'ALTER TABLE organizations ADD COLUMN country TEXT' },
+
+        // Financial & Ops
+        { name: 'fiscal_year_start_month', sql: 'ALTER TABLE organizations ADD COLUMN fiscal_year_start_month INTEGER DEFAULT 1' },
+        { name: 'primary_currency_code', sql: 'ALTER TABLE organizations ADD COLUMN primary_currency_code TEXT DEFAULT "USD"' },
+        { name: 'bank_account_number', sql: 'ALTER TABLE organizations ADD COLUMN bank_account_number TEXT' },
+        { name: 'ifsc', sql: 'ALTER TABLE organizations ADD COLUMN ifsc TEXT' },
+        { name: 'iban', sql: 'ALTER TABLE organizations ADD COLUMN iban TEXT' },
+        { name: 'billing_address_id', sql: 'ALTER TABLE organizations ADD COLUMN billing_address_id TEXT' },
+        { name: 'shipping_address_id', sql: 'ALTER TABLE organizations ADD COLUMN shipping_address_id TEXT' },
+
+        // Regional Settings
+        { name: 'main_time_zone', sql: 'ALTER TABLE organizations ADD COLUMN main_time_zone TEXT DEFAULT "UTC"' },
+        { name: 'main_locale', sql: 'ALTER TABLE organizations ADD COLUMN main_locale TEXT DEFAULT "en_US"' },
+        { name: 'country_of_incorporation', sql: 'ALTER TABLE organizations ADD COLUMN country_of_incorporation TEXT' },
+
+        // Status & Compliance
+        { name: 'status', sql: 'ALTER TABLE organizations ADD COLUMN status TEXT DEFAULT "active"' },
+        { name: 'compliance_certifications', sql: 'ALTER TABLE organizations ADD COLUMN compliance_certifications TEXT' },
+        { name: 'data_protection_officer_contact', sql: 'ALTER TABLE organizations ADD COLUMN data_protection_officer_contact TEXT' },
+
+        // Audit / Metadata
+        { name: 'updated_by', sql: 'ALTER TABLE organizations ADD COLUMN updated_by TEXT' },
+        { name: 'notes', sql: 'ALTER TABLE organizations ADD COLUMN notes TEXT' },
+        { name: 'internal_comments', sql: 'ALTER TABLE organizations ADD COLUMN internal_comments TEXT' }
+    ]
+
+    // Add missing columns
+    for (const column of newColumns) {
+        if (!existingColumns.includes(column.name)) {
+            console.log(`Adding column: ${column.name}`)
+            await dbRun(column.sql)
+        } else {
+            console.log(`Column ${column.name} already exists, skipping...`)
+        }
+    }
+
+    // Update industry column to industry_id if not already updated
+    if (existingColumns.includes('industry') && !existingColumns.includes('industry_id')) {
+        console.log('Renaming industry column to industry_id')
+        // SQLite doesn't support RENAME COLUMN directly in older versions
+        // We'll add the new column and migrate data if needed
+        await dbRun('ALTER TABLE organizations ADD COLUMN industry_id TEXT')
+    }
+
+    // Create additional indexes for new columns
+    const newIndexes = [
+        'CREATE INDEX IF NOT EXISTS idx_organization_legal_name ON organizations(legal_name)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_subdomain_v4l ON organizations(sub_domain_to_v4l_app)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_owner ON organizations(owner_id)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_parent ON organizations(parent_org_id)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_type ON organizations(organization_type)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_status ON organizations(status)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_country ON organizations(country)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_incorporation_country ON organizations(country_of_incorporation)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_city ON organizations(city)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_currency ON organizations(primary_currency_code)',
+        'CREATE INDEX IF NOT EXISTS idx_organization_updated_by ON organizations(updated_by)'
+    ]
+
+    for (const indexSql of newIndexes) {
+        await dbRun(indexSql)
+    }
+
+    await recordMigration(migrationName)
+    console.log(`Migration ${migrationName} completed successfully`)
+}
+
 // Run all pending migrations
 export async function runMigrations() {
     await initMigrationTable()
@@ -635,5 +934,8 @@ export async function runMigrations() {
     await migration_004_add_all_countries()
     await migration_005_create_organization_legal_type_table()
     await migration_006_add_common_legal_types()
+    await migration_007_create_industry_name_table()
+    await migration_008_add_common_industries()
+    await migration_009_update_organizations_table()
     console.log('All migrations completed')
 }
